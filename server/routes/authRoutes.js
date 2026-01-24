@@ -13,7 +13,8 @@ router.get(
   passport.authenticate('github', { failureRedirect: '/' }),
   (req, res) => {
     // Successful authentication, redirect to Frontend Dashboard
-    res.redirect('http://localhost:5173/');
+    const clientUrl = req.app.get('CLIENT_URL');
+    res.redirect(`${clientUrl}/dashboard`);
   }
 );
 
@@ -22,7 +23,8 @@ router.get(
 router.get('/logout', (req, res, next) => {
   req.logout((err) => {
     if (err) { return next(err); }
-    res.redirect('http://localhost:5173/');
+    const clientUrl = req.app.get('CLIENT_URL');
+    res.redirect(clientUrl);
   });
 });
 

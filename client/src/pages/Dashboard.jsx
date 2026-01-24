@@ -12,7 +12,8 @@ import { useAuth } from '../context/AuthContext';
 import { playNotificationSound } from '../components/soundUtils';
 import { useDarkMode } from '../components/useDarkMode';
 
-const socket = io('http://localhost:5000');
+const API_URL = import.meta.env.VITE_API_URL || 'https://your-backend-app.onrender.com';
+const socket = io(API_URL);
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const Dashboard = () => {

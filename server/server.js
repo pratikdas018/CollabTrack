@@ -17,9 +17,12 @@ require('./config/passport');
 const app = express();
 const server = http.createServer(app);
 
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+app.set('CLIENT_URL', CLIENT_URL); // Make available to routes
+
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: CLIENT_URL,
   credentials: true
 }));
 app.use(express.json()); // Parse JSON bodies
@@ -42,7 +45,7 @@ app.use(passport.session());
 // Socket.io Setup
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Your Vite Frontend URL
+    origin: CLIENT_URL, // Your Vite Frontend URL
     methods: ["GET", "POST"]
   }
 });
