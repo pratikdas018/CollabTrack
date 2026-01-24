@@ -23,3 +23,17 @@ exports.markRead = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
+
+// @desc    Mark all notifications as read
+// @route   PUT /api/notifications/read-all
+exports.markAllRead = async (req, res) => {
+  try {
+    await Notification.updateMany(
+      { recipient: req.user._id, read: false },
+      { $set: { read: true } }
+    );
+    res.json({ msg: 'All notifications marked as read' });
+  } catch (err) {
+    res.status(500).send('Server Error');
+  }
+};

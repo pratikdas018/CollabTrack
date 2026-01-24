@@ -9,62 +9,11 @@ import MembersTab from '../components/MembersTab';
 import NotificationDropdown from '../components/NotificationDropdown';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useAuth } from '../context/AuthContext';
+import { playNotificationSound } from '../components/soundUtils';
+import { useDarkMode } from '../components/useDarkMode';
 
 const socket = io('http://localhost:5000');
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-
-const playNotificationSound = (type = 'info') => {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    const now = ctx.currentTime;
-
-    if (type === 'success') {
-      // Upward chirp
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-      osc.start(now);
-      osc.stop(now + 0.5);
-    } else if (type === 'error') {
-      // Low buzz
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, now);
-      osc.frequency.linearRampToValueAtTime(100, now + 0.2);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
-      osc.start(now);
-      osc.stop(now + 0.2);
-    } else if (type === 'warning') {
-      // Double beep
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(800, now);
-      gain.gain.setValueAtTime(0.05, now);
-      gain.gain.setValueAtTime(0, now + 0.1);
-      gain.gain.setValueAtTime(0.05, now + 0.15);
-      gain.gain.setValueAtTime(0, now + 0.25);
-      osc.start(now);
-      osc.stop(now + 0.25);
-    } else {
-      // Default sine blip
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, now);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.00001, now + 0.5);
-      osc.start(now);
-      osc.stop(now + 0.5);
-    }
-  } catch (e) {
-    // Ignore audio errors
-  }
-};
 
 const Dashboard = () => {
   const { id } = useParams();
@@ -79,10 +28,7 @@ const Dashboard = () => {
   const [nudgeCooldowns, setNudgeCooldowns] = useState({});
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [isMuted, setIsMuted] = useState(() => localStorage.getItem('notification_muted') === 'true');
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved !== null ? saved === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  const [darkMode, setDarkMode] = useDarkMode();
   const isMutedRef = useRef(isMuted);
   const activityLogRef = useRef(null);
   const [activityDateFilter, setActivityDateFilter] = useState('');
@@ -108,22 +54,13 @@ const Dashboard = () => {
   }, [isMuted]);
 
   useEffect(() => {
-    localStorage.setItem('darkMode', darkMode);
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  useEffect(() => {
     fetchData();
 
     socket.emit('join-project', id);
     
     socket.on('new-commit', (newCommits) => {
       setCommits(prev => [...newCommits, ...prev]);
-      if (!isMutedRef.current) playNotificationSound('success');
+      if (!isMutedRef.current && document.hidden) playNotificationSound('success');
       alert('🔥 New Code Pushed!');
     });
 
@@ -139,12 +76,12 @@ const Dashboard = () => {
 
     socket.on('task-created', (newTask) => {
       setTasks(prev => [...prev, newTask]);
-      if (!isMutedRef.current) playNotificationSound('info');
+      if (!isMutedRef.current && document.hidden) playNotificationSound('info');
     });
 
     socket.on('member-added', (newMember) => {
       setProject(prev => ({ ...prev, members: [...prev.members, newMember] }));
-      if (!isMutedRef.current) playNotificationSound('success');
+      if (!isMutedRef.current && document.hidden) playNotificationSound('success');
       alert(`👋 New member joined: ${newMember.user.name}`);
     });
 

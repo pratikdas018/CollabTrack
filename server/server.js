@@ -11,9 +11,6 @@ const connectDB = require('./config/db');
 // Load Config
 dotenv.config();
 
-// Connect to Database
-connectDB();
-
 // Passport Config
 require('./config/passport');
 
@@ -32,7 +29,10 @@ app.use(session({
   secret: 'secret_key_change_this',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI })
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    mongoOptions: { family: 4 } // Force IPv4 to prevent SSL 80 errors
+  })
 }));
 
 // Passport Middleware
@@ -75,4 +75,6 @@ app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api/webhooks', require('./routes/webhookRoutes'));
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+connectDB().then(() => {
+  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+});

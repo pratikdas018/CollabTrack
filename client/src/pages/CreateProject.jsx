@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useDarkMode } from '../components/useDarkMode';
 
 const CreateProject = () => {
   const [formData, setFormData] = useState({
@@ -10,19 +11,7 @@ const CreateProject = () => {
     deadline: ''
   });
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved !== null ? saved === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('darkMode', darkMode);
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+  const [darkMode, setDarkMode] = useDarkMode();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
