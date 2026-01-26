@@ -10,12 +10,9 @@ import Footer from '../components/Footer';
 const MyTasks = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [invitations, setInvitations] = useState([]);
-  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showMyActivity, setShowMyActivity] = useState(false);
   const [processingId, setProcessingId] = useState(null);
   const [selectedInvitation, setSelectedInvitation] = useState(null);
   const [projectSearchQuery, setProjectSearchQuery] = useState('');
@@ -23,41 +20,12 @@ const MyTasks = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [tasksRes, projectsRes, invitationsRes] = await Promise.all([
-        api.get('/projects/tasks/me'),
+      const [projectsRes, invitationsRes] = await Promise.all([
         api.get('/projects'),
         api.get('/projects/invitations/me')
       ]);
-      setTasks(tasksRes.data);
       setProjects(projectsRes.data);
       setInvitations(invitationsRes.data);
-
-      // Fetch recent activity (commits) from all projects
-      if (projectsRes.data.length > 0) {
-        const commitsPromises = projectsRes.data.map(p => 
-          api.get(`/projects/${p._id}`)
-            .then(res => ({
-              projectName: res.data.project.name,
-              projectId: res.data.project._id,
-              commits: res.data.commits || []
-            }))
-            .catch(() => null)
-        );
-        
-        const projectsDetails = await Promise.all(commitsPromises);
-        
-        const allCommits = projectsDetails
-          .filter(p => p !== null)
-          .flatMap(p => p.commits.map(c => ({
-            ...c,
-            projectName: p.projectName,
-            projectId: p.projectId
-          })))
-          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-          .slice(0, 50);
-          
-        setActivities(allCommits);
-      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -111,19 +79,6 @@ const MyTasks = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'todo': return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300';
-      case 'doing': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300';
-      case 'done': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
-      default: return 'bg-slate-100 dark:bg-slate-800';
-    }
-  };
-
-  const filteredActivities = activities
-    .filter(activity => !showMyActivity || (user && (activity.committerName === user.username || activity.committerName === user.name)))
-    .slice(0, 10);
-
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(projectSearchQuery.toLowerCase())
   );
@@ -162,25 +117,11 @@ const MyTasks = () => {
               ))}
             </div>
           </div>
-          {/* Tasks Skeleton */}
-          <div>
-            <div className="h-8 w-32 bg-slate-200 dark:bg-slate-800 rounded mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-slate-200 dark:bg-slate-800 h-48 rounded-2xl"></div>
-              ))}
-            </div>
-          </div>
-          {/* Activity Skeleton */}
-          <div>
-            <div className="h-8 w-40 bg-slate-200 dark:bg-slate-800 rounded mb-6"></div>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl h-64 border border-slate-200 dark:border-slate-700"></div>
-          </div>
         </div>
-      ) : (tasks.length === 0 && projects.length === 0 && invitations.length === 0) ? (
+      ) : (projects.length === 0 && invitations.length === 0) ? (
         <div className="text-center text-gray-500 dark:text-gray-400 mt-20 bg-white dark:bg-slate-900/50 p-10 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800">
           <div className="text-5xl mb-4">📁</div>
-          <p className="text-xl font-medium mb-6">No projects or tasks found.</p>
+          <p className="text-xl font-medium mb-6">No projects found.</p>
           <Link to="/create" className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline">
             Create your first project →
           </Link>
@@ -284,76 +225,6 @@ const MyTasks = () => {
             </div>
           </div>
 
-          {/* Tasks Section */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">My Tasks</h2>
-            {tasks.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tasks.map(task => (
-            <div key={task._id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow hover:shadow-md transition-all duration-300 hover:scale-[1.02] border dark:border-gray-700">
-              <div className="flex justify-between items-start mb-2">
-                <span className={`text-xs px-2 py-1 rounded uppercase font-bold ${getStatusColor(task.status)}`}>
-                  {task.status}
-                </span>
-                {task.deadline && (
-                  <span className="text-xs text-red-500 font-medium">
-                    Due: {new Date(task.deadline).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-              <h3 className="text-lg font-bold mb-2 dark:text-white">{task.title}</h3>
-              <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                <Link to={`/project/${task.project._id}`} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                  {task.project.name}
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-            ) : (
-              <div className="text-center py-10 text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
-                No tasks assigned to you yet.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {!loading && activities.length > 0 && (
-        <div className="mt-12">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Recent Activity</h2>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-              <input 
-                type="checkbox" 
-                checked={showMyActivity} 
-                onChange={(e) => setShowMyActivity(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700"
-              />
-              Show only my activity
-            </label>
-          </div>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-            {filteredActivities.length > 0 ? (
-              filteredActivities.map((activity, i) => (
-                <div key={i} className="p-4 border-b border-slate-100 dark:border-slate-800 last:border-0 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
-                      <span className="font-bold">{activity.committerName}</span> pushed to <Link to={`/project/${activity.projectId}`} className="text-blue-600 dark:text-blue-400 hover:underline font-medium">{activity.projectName}</Link>
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1 italic truncate">"{activity.message}"</p>
-                  </div>
-                  <span className="text-xs text-slate-400 dark:text-slate-600 whitespace-nowrap ml-4">
-                    {new Date(activity.timestamp).toLocaleDateString()}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="p-10 text-center text-slate-500 dark:text-slate-400">
-                No recent activity matches your filter.
-              </div>
-            )}
-          </div>
         </div>
       )}
 
@@ -391,6 +262,22 @@ const MyTasks = () => {
                     {selectedInvitation.repoUrl}
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                   </a>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Team Members</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedInvitation.members?.map((m, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
+                        <img 
+                          src={m.user?.avatarUrl || `https://github.com/${m.user?.username}.png`} 
+                          alt={m.user?.username} 
+                          className="w-5 h-5 rounded-full"
+                        />
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{m.user?.username}</span>
+                        <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded uppercase font-black tracking-tighter">{m.role}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 

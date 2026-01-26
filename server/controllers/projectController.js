@@ -30,10 +30,13 @@ exports.createProject = async (req, res) => {
 // @route   GET /api/projects
 exports.getProjects = async (req, res) => {
   try {
-    const projects = await Project.find({ 
-      members: { 
-        $elemMatch: { user: new mongoose.Types.ObjectId(req.user._id), status: 'Accepted' } 
-      } 
+    const projects = await Project.find({
+      members: {
+        $elemMatch: {
+          user: req.user._id,
+          status: 'Accepted'
+        }
+      }
     })
       .populate('members.user', 'username name avatarUrl')
       .sort({ createdAt: -1 });
@@ -49,7 +52,12 @@ exports.getProjects = async (req, res) => {
 exports.getInvitations = async (req, res) => {
   try {
     const invitations = await Project.find({ 
-      members: { $elemMatch: { user: req.user._id, status: 'Pending' } } 
+      members: { 
+        $elemMatch: { 
+          user: req.user._id, 
+          status: 'Pending' 
+        } 
+      } 
     })
     .populate('members.user', 'username name avatarUrl')
     .sort({ createdAt: -1 });
@@ -167,24 +175,24 @@ exports.updateMemberRole = async (req, res) => {
 // @route   GET /api/projects/:id
 exports.getProject = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id)
+    // Find project where the ID matches AND the user is an accepted member
+    const project = await Project.findOne({
+      _id: req.params.id,
+      members: {
+        $elemMatch: {
+          user: req.user._id,
+          status: 'Accepted'
+        }
+      }
+    })
       .populate('members.user')
       .populate({ path: 'tasks', populate: { path: 'assignees' } })
       .populate({ path: 'tasks', populate: { path: 'history.user' } })
       .populate({ path: 'tasks', populate: { path: 'comments.user' } });
 
     if (!project) {
-      return res.status(404).json({ msg: 'Project not found' });
+      return res.status(401).json({ msg: 'Project not found or access denied. Ensure you have accepted the invitation.' });
     }
-
-    // Check if user is an accepted member
-    const isMember = project.members.some(m => {
-      const memberId = m.user._id ? m.user._id : m.user;
-      return String(memberId) === String(req.user._id) && 
-             m.status === 'Accepted';
-    });
-
-    if (!isMember) return res.status(401).json({ msg: 'Not authorized. Please accept the invitation first.' });
 
     let commits = await Commit.find({ projectId: req.params.id }).sort({ timestamp: -1 });
     
