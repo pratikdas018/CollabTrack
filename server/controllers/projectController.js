@@ -34,8 +34,8 @@ exports.getProjects = async (req, res) => {
     const projects = await Project.find({
       members: {
         $elemMatch: {
-          user: req.user._id,
-          status: 'Accepted'
+          user: new mongoose.Types.ObjectId(req.user._id),
+          status: { $ne: 'Pending' }
         }
       }
     })
@@ -56,7 +56,7 @@ exports.getInvitations = async (req, res) => {
     const invitations = await Project.find({ 
       members: {
         $elemMatch: {
-          user: req.user._id,
+          user: new mongoose.Types.ObjectId(req.user._id),
           status: 'Pending'
         }
       }
@@ -182,8 +182,8 @@ exports.getProject = async (req, res) => {
       _id: req.params.id,
       members: {
         $elemMatch: {
-          user: req.user._id,
-          status: 'Accepted'
+          user: new mongoose.Types.ObjectId(req.user._id),
+          status: { $ne: 'Pending' }
         }
       }
     })
