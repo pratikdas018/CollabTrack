@@ -19,8 +19,9 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-4">
-      <div className="max-w-2xl text-center space-y-8">
+    <div className="min-h-screen flex flex-col bg-slate-900 text-white">
+      <div className="flex-grow flex flex-col items-center justify-center p-4">
+        <div className="max-w-2xl text-center space-y-8">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight">
           Group Project <span className="text-blue-500">Tracker</span>
         </h1>
@@ -56,6 +57,12 @@ const LandingPage = () => {
           </div>
         </div>
       </div>
+      </div>
+      <footer className="py-6 text-center text-slate-500 text-sm border-t border-slate-800/50 bg-slate-900/50 backdrop-blur-sm">
+        <p>
+          &copy; 2026 All rights reserved by <span className="text-blue-400 font-semibold">Pratik</span> and <span className="text-blue-400 font-semibold">Sonali</span>.
+        </p>
+      </footer>
     </div>
   );
 };
