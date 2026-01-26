@@ -95,7 +95,7 @@ const MyTasks = () => {
           <Link to="/create" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             + New Project
           </Link>
-          <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/logout`} className="text-slate-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 font-medium">
+          <a href={`${import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://your-backend-url.onrender.com' : 'http://localhost:5000')}/api/auth/logout`} className="text-slate-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 font-medium">
             Logout
           </a>
         </div>
@@ -139,7 +139,7 @@ const MyTasks = () => {
               <span className="text-xl">➕</span>
               <span className="font-medium text-slate-700 dark:text-slate-200">New Project</span>
             </Link>
-            <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/logout`} className="flex items-center gap-3 p-4 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left text-red-600 dark:text-red-400">
+            <a href={`${import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://your-backend-url.onrender.com' : 'http://localhost:5000')}/api/auth/logout`} className="flex items-center gap-3 p-4 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left text-red-600 dark:text-red-400">
               <span className="text-xl">🚪</span>
               <span className="font-medium">Logout</span>
             </a>

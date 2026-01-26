@@ -1,8 +1,7 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { PieChart, Pie, Tooltip, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
-import Confetti from 'react-confetti';
 import api from '../api';
 import TaskBoard from '../components/TaskBoard';
 import MembersTab from '../components/MembersTab';
@@ -12,7 +11,12 @@ import { useAuth } from '../context/AuthContext';
 import { playNotificationSound } from '../components/soundUtils';
 import { useDarkMode } from '../components/useDarkMode';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const Confetti = lazy(() => import('react-confetti'));
+
+// Ensure VITE_API_URL is used. If it's missing in production, 
+// it will now fail more visibly or you can set a production fallback.
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://your-backend-url.onrender.com' : 'http://localhost:5000');
+
 const socket = io(API_URL, {
   withCredentials: true,
 });
@@ -379,7 +383,11 @@ const Dashboard = () => {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-      {progress === 100 && <Confetti width={windowSize.width} height={windowSize.height} />}
+      {progress === 100 && (
+        <Suspense fallback={null}>
+          <Confetti width={windowSize.width} height={windowSize.height} />
+        </Suspense>
+      )}
       <header className="mb-8 sticky top-0 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl py-4 border-b border-slate-200/50 dark:border-slate-800/50 -mx-4 px-4 md:-mx-6 md:px-6">
         <div className="flex justify-between items-center gap-4">
           {loading ? (

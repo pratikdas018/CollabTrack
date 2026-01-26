@@ -423,7 +423,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                                         onChange={handleCommentChange}
                                         autoComplete="off"
                                       />
-                                      <button type="submit" className="bg-blue-500 text-white px-2 rounded">></button>
+                                      <button type="submit" className="bg-blue-500 text-white px-2 rounded"></button>
                                     </form>
                                   </div>
                                 ) : (
