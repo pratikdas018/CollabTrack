@@ -20,10 +20,14 @@ const server = http.createServer(app);
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 app.set('CLIENT_URL', CLIENT_URL); // Make available to routes
 
+// Trust Proxy for Render (Required for secure cookies behind proxy)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({
   origin: CLIENT_URL,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 app.use(express.json()); // Parse JSON bodies
 
@@ -35,7 +39,12 @@ app.use(session({
   store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
     mongoOptions: { family: 4 } // Force IPv4 to prevent SSL 80 errors
-  })
+  }),
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    secure: process.env.NODE_ENV === 'production', // true in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // 'none' for cross-site
+  }
 }));
 
 // Passport Middleware
@@ -46,7 +55,8 @@ app.use(passport.session());
 const io = new Server(server, {
   cors: {
     origin: CLIENT_URL, // Your Vite Frontend URL
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
