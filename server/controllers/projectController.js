@@ -15,11 +15,42 @@ exports.createProject = async (req, res) => {
       repoUrl,
       githubRepoId, // User must provide this or fetch it via GitHub API
       deadline,
-      members: req.user ? [{ user: req.user._id, role: 'Owner' }] : []
+      members: req.user ? [{ user: req.user._id, role: 'Owner', status: 'Accepted' }] : []
     });
 
     await project.save();
     res.status(201).json(project);
+  } catch (err) {
+    res.status(500).send('Server Error');
+  }
+};
+
+// @desc    Get all projects for current user
+// @route   GET /api/projects
+exports.getProjects = async (req, res) => {
+  try {
+    const projects = await Project.find({ 
+      members: { $elemMatch: { user: req.user._id, status: 'Accepted' } } 
+    })
+      .populate('members.user', 'username name avatarUrl')
+      .sort({ createdAt: -1 });
+    res.json(projects);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
+  }
+};
+
+// @desc    Get all pending invitations for current user
+// @route   GET /api/projects/invitations/me
+exports.getInvitations = async (req, res) => {
+  try {
+    const invitations = await Project.find({ 
+      members: { $elemMatch: { user: req.user._id, status: 'Pending' } } 
+    })
+    .populate('members.user', 'username name avatarUrl')
+    .sort({ createdAt: -1 });
+    res.json(invitations);
   } catch (err) {
     res.status(500).send('Server Error');
   }
@@ -42,11 +73,68 @@ exports.addMember = async (req, res) => {
       return res.status(400).json({ msg: 'User already a member' });
     }
 
-    project.members.push({ user: user._id, role: 'Member' });
+    project.members.push({ user: user._id, role: 'Member', status: 'Pending' });
     await project.save();
     
+    // Create Notification for the invited user
+    const notification = new Notification({
+      recipient: user._id,
+      sender: req.user._id,
+      type: 'project_invitation',
+      message: `${req.user.username} invited you to join project: ${project.name}`,
+      project: project._id
+    });
+    await notification.save();
+
+    // Real-time notification for the invited user
+    const io = req.app.get('io');
+    io.to(user._id.toString()).emit('notification', notification);
+
+    // Notify existing members in the project room to update their UI
+    io.to(project._id.toString()).emit('member-invited', { user, role: 'Member', status: 'Pending' });
+
     const updatedProject = await Project.findById(req.params.id).populate('members.user');
     res.json(updatedProject.members);
+  } catch (err) {
+    res.status(500).send('Server Error');
+  }
+};
+
+// @desc    Accept Invitation
+// @route   PUT /api/projects/:id/accept
+exports.acceptInvitation = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ msg: 'Project not found' });
+
+    const member = project.members.find(m => m.user.toString() === req.user._id.toString());
+    if (!member || member.status !== 'Pending') {
+      return res.status(400).json({ msg: 'No pending invitation found' });
+    }
+
+    member.status = 'Accepted';
+    await project.save();
+
+    const io = req.app.get('io');
+    io.to(project._id.toString()).emit('member-added', { user: req.user, role: member.role });
+
+    res.json({ msg: 'Invitation accepted', project });
+  } catch (err) {
+    res.status(500).send('Server Error');
+  }
+};
+
+// @desc    Reject Invitation
+// @route   PUT /api/projects/:id/reject
+exports.rejectInvitation = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ msg: 'Project not found' });
+
+    project.members = project.members.filter(m => m.user.toString() !== req.user._id.toString());
+    await project.save();
+
+    res.json({ msg: 'Invitation rejected' });
   } catch (err) {
     res.status(500).send('Server Error');
   }
@@ -85,6 +173,12 @@ exports.getProject = async (req, res) => {
     if (!project) {
       return res.status(404).json({ msg: 'Project not found' });
     }
+
+    // Check if user is an accepted member
+    const isMember = project.members.some(m => 
+      m.user._id.toString() === req.user._id.toString() && m.status === 'Accepted'
+    );
+    if (!isMember) return res.status(401).json({ msg: 'Not authorized. Please accept the invitation first.' });
 
     let commits = await Commit.find({ projectId: req.params.id }).sort({ timestamp: -1 });
     

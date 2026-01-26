@@ -11,7 +11,7 @@ const LandingPage = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/my-tasks');
+      navigate('/projects');
     }
   }, [user, navigate]);
 

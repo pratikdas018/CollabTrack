@@ -33,12 +33,12 @@ class ErrorBoundary extends React.Component {
                 className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25 active:scale-95"
               >
                 Reload Page
-              </button>
+              </button> ``
               <button 
-                onClick={() => window.location.href = '/my-tasks'}
+                onClick={() => window.location.href = '/projects'}
                 className="text-slate-500 dark:text-slate-400 font-bold hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
               >
-                Go to My Tasks
+                Go to My Projects
               </button>
             </div>
           </div>

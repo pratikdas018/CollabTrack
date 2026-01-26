@@ -212,7 +212,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/50 h-full relative z-10">
+    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/50 h-full relative z-10 animate-fade-in">
       <div className="flex justify-between items-center mb-4">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-2xl font-bold dark:text-white mr-2">Tasks</h2>
@@ -295,7 +295,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className="bg-white dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/50 hover:border-indigo-300 dark:hover:border-indigo-900 transition-all group"
+                            className="bg-white dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/50 hover:border-indigo-300 dark:hover:border-indigo-900 transition-all duration-300 hover:scale-[1.02] hover:shadow-md group"
                           >
                             <div className="font-bold text-slate-800 dark:text-slate-100 leading-snug">
                               {task.readableId && <span className="text-xs text-gray-400 mr-1">#{task.readableId}</span>}

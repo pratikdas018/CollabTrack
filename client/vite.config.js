@@ -12,6 +12,9 @@ export default defineConfig({
             if (id.includes('recharts')) {
               return 'recharts';
             }
+            if (id.includes('react-confetti')) {
+              return 'confetti';
+            }
             if (id.includes('socket.io-client')) {
               return 'socket-io';
             }

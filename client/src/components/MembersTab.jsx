@@ -114,7 +114,7 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/50 h-full relative z-10 animate-pulse">
+      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-white/20 dark:border-slate-800/50 h-full relative z-10 animate-pulse">
         <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-6"></div>
         <div className="flex gap-3 max-w-md mb-10">
           <div className="h-10 flex-1 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
@@ -126,6 +126,7 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
             <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded"></div>
             <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded"></div>
             <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded"></div>
+            <div className="h-4 w-20 bg-slate-100 dark:bg-slate-800 rounded"></div>
           </div>
           {[1, 2, 3].map(i => (
             <div key={i} className="py-4 flex items-center justify-between border-b border-slate-50 dark:border-slate-800/50 last:border-0">
@@ -136,6 +137,7 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
               <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded"></div>
               <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded"></div>
               <div className="h-6 w-20 bg-slate-100 dark:bg-slate-800 rounded-full"></div>
+              <div className="h-6 w-16 bg-slate-100 dark:bg-slate-800 rounded-full"></div>
             </div>
           ))}
         </div>
@@ -144,7 +146,7 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/50 h-full relative z-10">
+    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-white/20 dark:border-slate-800/50 h-full relative z-10 animate-fade-in">
       <h2 className="text-2xl font-bold mb-6 dark:text-white">Team Performance</h2>
       
       {/* Add Member Form */}
@@ -152,7 +154,7 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
         <input
           type="text"
           placeholder="Enter GitHub Username"
-          className="flex-1 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl bg-white dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+          className="flex-1 border border-white/20 dark:border-slate-700 p-2.5 rounded-xl bg-white/50 dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
@@ -190,7 +192,8 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
                 Commits {sortConfig.key === 'commits' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </th>
               <th className="pb-4">Last Active</th>
-              <th className="pb-4">Status</th>
+              <th className="pb-4">Activity</th>
+              <th className="pb-4">Invite Status</th>
               {isOwner && <th className="pb-4 text-right">Action</th>}
             </tr>
           </thead>
@@ -225,6 +228,11 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
                   <td className="py-3">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${stats.status.includes('Active') ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>
                       {stats.status}
+                    </span>
+                  </td>
+                  <td className="py-3">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${member.status === 'Accepted' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                      {member.status || 'Accepted'}
                     </span>
                   </td>
                   {isOwner && (
