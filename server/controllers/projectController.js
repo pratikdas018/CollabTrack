@@ -35,7 +35,7 @@ exports.getProjects = async (req, res) => {
       members: {
         $elemMatch: {
           user: new mongoose.Types.ObjectId(req.user._id),
-          status: { $ne: 'Pending' }
+          status: 'Accepted'
         }
       }
     })
@@ -183,7 +183,7 @@ exports.getProject = async (req, res) => {
       members: {
         $elemMatch: {
           user: new mongoose.Types.ObjectId(req.user._id),
-          status: { $ne: 'Pending' }
+          status: 'Accepted'
         }
       }
     })

@@ -88,6 +88,21 @@ app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api/webhooks', require('./routes/webhookRoutes'));
 
 const PORT = process.env.PORT || 5000;
-connectDB().then(() => {
+connectDB().then(async () => {
+  // One-time migration to add 'Accepted' status to legacy project members
+  try {
+    const Project = require('./models/Project');
+    const result = await Project.updateMany(
+      { "members.status": { $exists: false } },
+      { $set: { "members.$[elem].status": "Accepted" } },
+      { arrayFilters: [{ "elem.status": { $exists: false } }] }
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`Migration: Updated ${result.modifiedCount} projects to include 'Accepted' status.`);
+    }
+  } catch (err) {
+    console.error("Data migration failed:", err);
+  }
+
   server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
