@@ -63,7 +63,9 @@ const MyTasks = () => {
 
         {/* Mobile Menu Dropdown */}
         {isMobileMenuOpen && (
-          <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <>
+            <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
+            <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <button onClick={() => { setDarkMode(!darkMode); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-b border-slate-100 dark:border-slate-800">
               <span className="text-xl">{darkMode ? '☀️' : '🌙'}</span>
               <span className="font-medium text-slate-700 dark:text-slate-200">{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
@@ -76,7 +78,8 @@ const MyTasks = () => {
               <span className="text-xl">🚪</span>
               <span className="font-medium">Logout</span>
             </a>
-          </div>
+            </div>
+          </>
         )}
       </div>
 
