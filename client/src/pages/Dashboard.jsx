@@ -369,13 +369,13 @@ const Dashboard = () => {
 
   return (
     <ErrorBoundary>
-    <div className={`min-h-screen p-6 relative overflow-hidden ${(isPanicMode || isDeadlineRisk) ? 'bg-red-50/50 dark:bg-slate-950' : 'bg-slate-50 dark:bg-slate-950'} transition-colors duration-200`}>
+    <div className={`min-h-screen p-4 md:p-6 relative overflow-hidden ${(isPanicMode || isDeadlineRisk) ? 'bg-red-50/50 dark:bg-slate-950' : 'bg-slate-50 dark:bg-slate-950'} transition-colors duration-200`}>
       {/* Background Blobs for Glassmorphism Effect */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       {progress === 100 && <Confetti width={windowSize.width} height={windowSize.height} />}
-      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-0 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl py-4 border-b border-slate-200/50 dark:border-slate-800/50 -mx-6 px-6">
+      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-0 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl py-4 border-b border-slate-200/50 dark:border-slate-800/50 -mx-4 px-4 md:-mx-6 md:px-6">
         {loading ? (
           <div className="animate-pulse">
             <div className="h-10 w-64 bg-slate-200 dark:bg-slate-800 rounded-lg mb-2"></div>
@@ -383,7 +383,7 @@ const Dashboard = () => {
           </div>
         ) : (
           <div>
-            <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{project.name}</h1>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{project.name}</h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1 flex items-center gap-2">
               <span className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded uppercase tracking-wider">Repository</span>
               {project.repoUrl}
@@ -398,7 +398,7 @@ const Dashboard = () => {
         <button 
           onClick={handleSync}
           disabled={isSyncing}
-          className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md hover:shadow-indigo-500/20"
+          className="bg-indigo-600 text-white px-3 md:px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md hover:shadow-indigo-500/20 text-sm md:text-base"
         >
           {isSyncing ? 'Syncing...' : 'Sync Now'}
         </button>
@@ -411,27 +411,27 @@ const Dashboard = () => {
       </header>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-8 bg-white/30 dark:bg-slate-900/30 backdrop-blur-md p-1 rounded-xl w-fit border border-white/20 dark:border-slate-800/50 shadow-sm relative z-10">
+      <div className="flex flex-wrap justify-center md:justify-start gap-1 mb-8 bg-white/30 dark:bg-slate-900/30 backdrop-blur-md p-1 rounded-xl w-full md:w-fit border border-white/20 dark:border-slate-800/50 shadow-sm relative z-10">
         <button 
-          className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-white/80 dark:bg-slate-800/80 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${activeTab === 'overview' ? 'bg-white/80 dark:bg-slate-800/80 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           onClick={() => setActiveTab('overview')}
         >
           Overview
         </button>
         <button 
-          className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'members' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${activeTab === 'members' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           onClick={() => setActiveTab('members')}
         >
           Members
         </button>
         <button 
-          className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'activity' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${activeTab === 'activity' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           onClick={() => setActiveTab('activity')}
         >
           Activity
         </button>
         <button 
-          className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'settings' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${activeTab === 'settings' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           onClick={() => setActiveTab('settings')}
         >
           Settings
