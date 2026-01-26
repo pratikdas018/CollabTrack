@@ -13,7 +13,9 @@ import { playNotificationSound } from '../components/soundUtils';
 import { useDarkMode } from '../components/useDarkMode';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const socket = io(API_URL);
+const socket = io(API_URL, {
+  withCredentials: true,
+});
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const Dashboard = () => {
