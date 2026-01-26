@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { playNotificationSound } from '../components/soundUtils';
 import { useDarkMode } from '../components/useDarkMode';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://your-backend-app.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const socket = io(API_URL);
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -57,6 +57,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchData();
 
+    if (!socket.connected) socket.connect();
     socket.emit('join-project', id);
     
     socket.on('new-commit', (newCommits) => {
@@ -81,7 +82,7 @@ const Dashboard = () => {
     });
 
     socket.on('member-added', (newMember) => {
-      setProject(prev => ({ ...prev, members: [...prev.members, newMember] }));
+      setProject(prev => (prev ? { ...prev, members: [...prev.members, newMember] } : prev));
       if (!isMutedRef.current && document.hidden) playNotificationSound('success');
       alert(`👋 New member joined: ${newMember.user.name}`);
     });

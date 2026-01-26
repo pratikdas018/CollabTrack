@@ -14,7 +14,8 @@ const LandingPage = () => {
 
   const handleLogin = () => {
     // Redirects to the backend route that triggers passport-github2
-    window.location.href = 'http://localhost:5000/api/auth/github';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    window.location.href = `${apiUrl}/api/auth/github`;
   };
 
   return (
