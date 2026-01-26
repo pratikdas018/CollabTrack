@@ -11,12 +11,16 @@ import { useAuth } from '../context/AuthContext';
 import { playNotificationSound } from '../components/soundUtils';
 import { useDarkMode } from '../components/useDarkMode';
 
+<<<<<<< HEAD
 const Confetti = lazy(() => import('react-confetti'));
 
 // Ensure VITE_API_URL is used. If it's missing in production, 
 // it will now fail more visibly or you can set a production fallback.
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://your-backend-url.onrender.com' : 'http://localhost:5000');
 
+=======
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+>>>>>>> 943be75 (adding)
 const socket = io(API_URL, {
   withCredentials: true,
 });
