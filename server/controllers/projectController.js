@@ -32,7 +32,7 @@ exports.getProjects = async (req, res) => {
   try {
     // Find projects where the user is in the members array with 'Accepted' status
     const projects = await Project.find({
-      'members.user': req.user._id,
+      'members.user': new mongoose.Types.ObjectId(req.user._id),
       'members.status': 'Accepted'
     })
       .populate('members.user', 'username name avatarUrl')
@@ -50,7 +50,7 @@ exports.getInvitations = async (req, res) => {
   try {
     // Find projects where the user is in the members array with 'Pending' status
     const invitations = await Project.find({ 
-      'members.user': req.user._id,
+      'members.user': new mongoose.Types.ObjectId(req.user._id),
       'members.status': 'Pending'
     })
     .populate('members.user', 'username name avatarUrl')
