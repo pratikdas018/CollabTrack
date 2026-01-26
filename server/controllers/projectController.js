@@ -30,13 +30,10 @@ exports.createProject = async (req, res) => {
 // @route   GET /api/projects
 exports.getProjects = async (req, res) => {
   try {
+    // Find projects where the user is in the members array with 'Accepted' status
     const projects = await Project.find({
-      members: {
-        $elemMatch: {
-          user: req.user._id,
-          status: 'Accepted'
-        }
-      }
+      'members.user': req.user._id,
+      'members.status': 'Accepted'
     })
       .populate('members.user', 'username name avatarUrl')
       .sort({ createdAt: -1 });
@@ -51,13 +48,10 @@ exports.getProjects = async (req, res) => {
 // @route   GET /api/projects/invitations/me
 exports.getInvitations = async (req, res) => {
   try {
+    // Find projects where the user is in the members array with 'Pending' status
     const invitations = await Project.find({ 
-      members: { 
-        $elemMatch: { 
-          user: req.user._id, 
-          status: 'Pending' 
-        } 
-      } 
+      'members.user': req.user._id,
+      'members.status': 'Pending'
     })
     .populate('members.user', 'username name avatarUrl')
     .sort({ createdAt: -1 });
@@ -175,23 +169,24 @@ exports.updateMemberRole = async (req, res) => {
 // @route   GET /api/projects/:id
 exports.getProject = async (req, res) => {
   try {
-    // Find project where the ID matches AND the user is an accepted member
-    const project = await Project.findOne({
-      _id: req.params.id,
-      members: {
-        $elemMatch: {
-          user: req.user._id,
-          status: 'Accepted'
-        }
-      }
-    })
+    const project = await Project.findById(req.params.id)
       .populate('members.user')
       .populate({ path: 'tasks', populate: { path: 'assignees' } })
       .populate({ path: 'tasks', populate: { path: 'history.user' } })
       .populate({ path: 'tasks', populate: { path: 'comments.user' } });
 
     if (!project) {
-      return res.status(401).json({ msg: 'Project not found or access denied. Ensure you have accepted the invitation.' });
+      return res.status(404).json({ msg: 'Project not found' });
+    }
+
+    // Robust membership check: compare IDs as strings to avoid type mismatches
+    const isMember = project.members.some(m => 
+      m.user._id.toString() === req.user._id.toString() && 
+      m.status === 'Accepted'
+    );
+
+    if (!isMember) {
+      return res.status(401).json({ msg: 'Access denied. You must be an accepted member of this project.' });
     }
 
     let commits = await Commit.find({ projectId: req.params.id }).sort({ timestamp: -1 });

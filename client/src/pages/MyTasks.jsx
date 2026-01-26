@@ -108,15 +108,6 @@ const MyTasks = () => {
               ))}
             </div>
           </div>
-          {/* Projects Skeleton */}
-          <div>
-            <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-slate-200 dark:bg-slate-800 h-40 rounded-2xl"></div>
-              ))}
-            </div>
-          </div>
         </div>
       ) : (projects.length === 0 && invitations.length === 0) ? (
         <div className="text-center text-gray-500 dark:text-gray-400 mt-20 bg-white dark:bg-slate-900/50 p-10 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800">
