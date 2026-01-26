@@ -35,7 +35,10 @@ exports.getProjects = async (req, res) => {
       members: {
         $elemMatch: {
           user: new mongoose.Types.ObjectId(req.user._id),
-          status: 'Accepted'
+          $or: [
+            { status: 'Accepted' },
+            { status: { $exists: false } } // Include old projects without a status field
+          ]
         }
       }
     })
@@ -183,7 +186,10 @@ exports.getProject = async (req, res) => {
       members: {
         $elemMatch: {
           user: new mongoose.Types.ObjectId(req.user._id),
-          status: 'Accepted'
+          $or: [
+            { status: 'Accepted' },
+            { status: { $exists: false } } // Include old projects without a status field
+          ]
         }
       }
     })
