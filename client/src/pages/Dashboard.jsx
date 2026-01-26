@@ -35,6 +35,7 @@ const Dashboard = () => {
   const isMutedRef = useRef(isMuted);
   const activityLogRef = useRef(null);
   const [activityDateFilter, setActivityDateFilter] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -375,36 +376,74 @@ const Dashboard = () => {
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       {progress === 100 && <Confetti width={windowSize.width} height={windowSize.height} />}
-      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sticky top-0 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl py-4 border-b border-slate-200/50 dark:border-slate-800/50 -mx-4 px-4 md:-mx-6 md:px-6">
-        {loading ? (
-          <div className="animate-pulse">
-            <div className="h-10 w-64 bg-slate-200 dark:bg-slate-800 rounded-lg mb-2"></div>
-            <div className="h-4 w-96 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+      <header className="mb-8 sticky top-0 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl py-4 border-b border-slate-200/50 dark:border-slate-800/50 -mx-4 px-4 md:-mx-6 md:px-6">
+        <div className="flex justify-between items-center gap-4">
+          {loading ? (
+            <div className="animate-pulse">
+              <div className="h-10 w-64 bg-slate-200 dark:bg-slate-800 rounded-lg mb-2"></div>
+              <div className="h-4 w-96 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
+            </div>
+          ) : (
+            <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{project.name}</h1>
+              <p className="text-slate-500 dark:text-slate-400 font-medium mt-1 flex items-center gap-2">
+                <span className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded uppercase tracking-wider">Repository</span>
+                {project.repoUrl}
+              </p>
+            </div>
+          )}
+
+          {/* Desktop Controls */}
+          <div className="hidden md:flex items-center gap-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-1.5 rounded-xl shadow-sm border border-white/20 dark:border-slate-800/50">
+            <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Dark Mode">
+              {darkMode ? '☀️' : '🌙'}
+            </button>
+            <NotificationDropdown socket={socket} userId={user?._id} muted={isMuted} />
+            <button 
+              onClick={handleSync}
+              disabled={isSyncing}
+              className="bg-indigo-600 text-white px-3 md:px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md hover:shadow-indigo-500/20 text-sm md:text-base"
+            >
+              {isSyncing ? 'Syncing...' : 'Sync Now'}
+            </button>
+            <button onClick={() => navigate('/my-tasks')} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400" title="Back to My Tasks">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+            </button>
           </div>
-        ) : (
-          <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">{project.name}</h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1 flex items-center gap-2">
-              <span className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded uppercase tracking-wider">Repository</span>
-              {project.repoUrl}
-            </p>
+
+          {/* Mobile Controls */}
+          <div className="flex md:hidden items-center gap-2">
+            <NotificationDropdown socket={socket} userId={user?._id} muted={isMuted} />
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-lg bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-800/50 text-slate-700 dark:text-slate-200">
+              {isMobileMenuOpen ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden mt-4 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-3 shadow-xl animate-in slide-in-from-top-2">
+            <button onClick={() => { setDarkMode(!darkMode); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left">
+              <span className="text-xl">{darkMode ? '☀️' : '🌙'}</span>
+              <span className="font-medium text-slate-700 dark:text-slate-200">{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+            <button onClick={() => { handleSync(); setIsMobileMenuOpen(false); }} disabled={isSyncing} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left">
+              <span className="text-xl">🔄</span>
+              <span className="font-medium text-slate-700 dark:text-slate-200">{isSyncing ? 'Syncing...' : 'Sync Project'}</span>
+            </button>
+            <button onClick={() => navigate('/my-tasks')} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left">
+              <span className="text-xl">🏠</span>
+              <span className="font-medium text-slate-700 dark:text-slate-200">Back to My Tasks</span>
+            </button>
           </div>
         )}
-        <div className="flex items-center gap-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-1.5 rounded-xl shadow-sm border border-white/20 dark:border-slate-800/50">
-        <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Dark Mode">
-          {darkMode ? '☀️' : '🌙'}
-        </button>
-        <NotificationDropdown socket={socket} userId={user?._id} muted={isMuted} />
-        <button 
-          onClick={handleSync}
-          disabled={isSyncing}
-          className="bg-indigo-600 text-white px-3 md:px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md hover:shadow-indigo-500/20 text-sm md:text-base"
-        >
-          {isSyncing ? 'Syncing...' : 'Sync Now'}
-        </button>
-        </div>
+
         {(isPanicMode || isDeadlineRisk) && (
-          <div className="bg-red-600 text-white px-4 py-2 rounded-lg animate-pulse font-bold shadow-lg shadow-red-500/40 relative z-50">
+          <div className="mt-4 md:absolute md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-red-600 text-white px-4 py-2 rounded-lg animate-pulse font-bold shadow-lg shadow-red-500/40 text-center text-sm md:text-base z-50">
             {isDeadlineRisk ? '⚠️ Project at HIGH RISK of missing deadline' : '⚠️ DEADLINE RISK: HIGH'}
           </div>
         )}
