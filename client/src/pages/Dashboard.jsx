@@ -371,6 +371,10 @@ const Dashboard = () => {
   return (
     <ErrorBoundary>
     <div className={`min-h-screen p-4 md:p-6 relative overflow-hidden ${(isPanicMode || isDeadlineRisk) ? 'bg-red-50/50 dark:bg-slate-950' : 'bg-slate-50 dark:bg-slate-950'} transition-colors duration-200`}>
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30 md:hidden transition-opacity" onClick={() => setIsMobileMenuOpen(false)} />
+      )}
+
       {/* Background Blobs for Glassmorphism Effect */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
