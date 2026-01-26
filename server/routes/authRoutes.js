@@ -14,7 +14,7 @@ router.get(
   (req, res) => {
     // Successful authentication, redirect to Frontend Dashboard
     const clientUrl = req.app.get('CLIENT_URL');
-    res.redirect(`${clientUrl}/projects`);
+    res.redirect(`${clientUrl}/`);
   }
 );
 

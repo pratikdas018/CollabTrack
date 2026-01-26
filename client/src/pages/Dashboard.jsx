@@ -49,6 +49,9 @@ const Dashboard = () => {
       setCommits(res.data.commits);
     } catch (err) {
       console.error(err);
+      if (err.response && err.response.status === 401) {
+        navigate('/');
+      }
       setProject(null);
     } finally {
       setLoading(false);
