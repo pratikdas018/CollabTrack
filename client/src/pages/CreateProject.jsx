@@ -29,7 +29,7 @@ const CreateProject = () => {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 p-4">
+    <div className="flex items-center justify-center min-h-[100dvh] bg-gray-50 dark:bg-gray-900 transition-colors duration-200 p-4">
       <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded shadow-md w-full max-w-md border dark:border-gray-700">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold dark:text-white">Start New Project</h2>
