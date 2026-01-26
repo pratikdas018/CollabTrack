@@ -175,8 +175,11 @@ exports.getProject = async (req, res) => {
     }
 
     // Check if user is an accepted member
-    const isMember = project.members.some(m => 
-      m.user._id.toString() === req.user._id.toString() && m.status === 'Accepted'
+    const isMember = project.members.some(m => {
+      const memberId = m.user._id || m.user; // Handle both populated and unpopulated
+      return memberId.toString() === req.user._id.toString() && 
+             m.status === 'Accepted';
+    }
     );
     if (!isMember) return res.status(401).json({ msg: 'Not authorized. Please accept the invitation first.' });
 

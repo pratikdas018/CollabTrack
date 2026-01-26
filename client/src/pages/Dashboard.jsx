@@ -253,6 +253,21 @@ const Dashboard = () => {
     }
   }, [activityLog, activeTab]);
 
+  if (loading && !project) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <div className="relative">
+        {/* Outer Ring */}
+        <div className="w-16 h-16 border-4 border-indigo-200 dark:border-indigo-900/30 rounded-full"></div>
+        {/* Spinning Ring */}
+        <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0 shadow-lg shadow-indigo-500/20"></div>
+      </div>
+      <div className="mt-6 text-center">
+        <p className="text-lg font-black text-slate-800 dark:text-white tracking-tight">Fetching Project</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium animate-pulse">Please wait a moment...</p>
+      </div>
+    </div>
+  );
+
   if (!loading && !project) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-6 transition-colors duration-200">
       <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-10 rounded-3xl shadow-xl border border-white/20 dark:border-slate-800/50 text-center max-w-md relative overflow-hidden">
