@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import { useDarkMode } from '../components/useDarkMode';
+import { useTheme } from '../components/useTheme.jsx';
+import Footer from '../components/Footer';
 
 const CreateProject = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +12,7 @@ const CreateProject = () => {
     deadline: ''
   });
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useDarkMode();
+  const [darkMode, setDarkMode] = useTheme();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,8 +30,8 @@ const CreateProject = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[100dvh] bg-gray-50 dark:bg-gray-900 transition-colors duration-200 p-4">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded shadow-md w-full max-w-md border dark:border-gray-700">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-8 rounded shadow-md w-96 border dark:border-gray-700">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold dark:text-white">Start New Project</h2>
           <button type="button" onClick={() => setDarkMode(!darkMode)} className="text-xl" title="Toggle Dark Mode">
@@ -61,6 +62,7 @@ const CreateProject = () => {
           Create Project
         </button>
       </form>
+      <Footer />
     </div>
   );
 };

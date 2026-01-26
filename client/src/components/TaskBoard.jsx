@@ -153,6 +153,10 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     }).catch(err => console.error("Failed to update task status", err));
   };
 
+  const filteredMembers = members.filter(m => 
+    m.user.username.toLowerCase().includes(mentionQuery.toLowerCase())
+  );
+
   const renderCommentText = (text) => {
     if (!text) return null;
     const parts = text.split(/(@\w+)/g);
@@ -166,7 +170,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
 
   if (isLoading) {
     return (
-      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-white/20 dark:border-slate-800/50 h-full relative z-10 animate-pulse">
+      <div className="bg-white dark:bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/50 h-full relative z-10 animate-pulse">
         <div className="flex justify-between items-center mb-8">
           <div className="flex flex-wrap items-center gap-3">
             <div className="h-8 w-24 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
@@ -208,21 +212,21 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
   }
 
   return (
-    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-white/20 dark:border-slate-800/50 h-full relative z-10">
+    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/50 h-full relative z-10">
       <div className="flex justify-between items-center mb-4">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-2xl font-bold dark:text-white mr-2">Tasks</h2>
           <input 
             type="text" 
             placeholder="Search tasks..." 
-            className="border border-white/20 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-white/50 dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <select 
             value={memberFilter}
             onChange={(e) => setMemberFilter(e.target.value)}
-            className="border border-white/20 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-white/50 dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
           >
             <option value="all">All Tasks</option>
             <option value="mine">My Tasks</option>
@@ -253,14 +257,14 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
         </div>
         <form onSubmit={handleAddTask} className="flex gap-2">
           <input 
-            className="border border-white/20 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-white/50 dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             placeholder="New Task..."
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
           />
           <input 
             type="date"
-            className="border border-white/20 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-white/50 dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             value={newTaskDeadline}
             onChange={(e) => setNewTaskDeadline(e.target.value)}
           />
@@ -272,7 +276,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
           {Object.entries(columns).map(([columnId, tasks]) => {
             if (!showEmptyColumns && columnId === 'At Risk' && tasks.length === 0) return null;
             return (
-            <div key={columnId} className={`p-4 rounded-2xl min-h-[400px] border ${columnId === 'At Risk' ? 'bg-red-50/30 border-red-100 dark:bg-red-950/10 dark:border-red-900/20' : 'bg-slate-50/30 dark:bg-slate-800/20 border-white/10 dark:border-slate-800/30'} backdrop-blur-sm`}>
+            <div key={columnId} className={`p-4 rounded-2xl min-h-[400px] border ${columnId === 'At Risk' ? 'bg-red-50/30 border-red-100 dark:bg-red-950/10 dark:border-red-900/20' : 'bg-slate-100/50 dark:bg-slate-800/20 border-slate-200 dark:border-slate-800/30'} backdrop-blur-sm`}>
               <h3 className={`font-black text-xs uppercase tracking-widest mb-4 flex items-center justify-between ${columnId === 'At Risk' ? 'text-red-600 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 {columnId}
                 <span className="bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full text-[10px]">{tasks.length}</span>
@@ -291,7 +295,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-white/20 dark:border-slate-800/50 hover:border-indigo-300 dark:hover:border-indigo-900 transition-all group"
+                            className="bg-white dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/50 hover:border-indigo-300 dark:hover:border-indigo-900 transition-all group"
                           >
                             <div className="font-bold text-slate-800 dark:text-slate-100 leading-snug">
                               {task.readableId && <span className="text-xs text-gray-400 mr-1">#{task.readableId}</span>}

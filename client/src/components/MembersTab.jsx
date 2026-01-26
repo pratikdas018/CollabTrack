@@ -114,7 +114,7 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
 
   if (isLoading) {
     return (
-      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-white/20 dark:border-slate-800/50 h-full relative z-10 animate-pulse">
+      <div className="bg-white dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/50 h-full relative z-10 animate-pulse">
         <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-6"></div>
         <div className="flex gap-3 max-w-md mb-10">
           <div className="h-10 flex-1 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
@@ -144,7 +144,7 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
   }
 
   return (
-    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-white/20 dark:border-slate-800/50 h-full relative z-10">
+    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800/50 h-full relative z-10">
       <h2 className="text-2xl font-bold mb-6 dark:text-white">Team Performance</h2>
       
       {/* Add Member Form */}
@@ -152,7 +152,7 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
         <input
           type="text"
           placeholder="Enter GitHub Username"
-          className="flex-1 border border-white/20 dark:border-slate-700 p-2.5 rounded-xl bg-white/50 dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+          className="flex-1 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl bg-white dark:bg-slate-800/50 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />

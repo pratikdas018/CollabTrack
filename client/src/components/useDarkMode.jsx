@@ -1,0 +1,1 @@
+export { useTheme as useDarkMode } from './useTheme';

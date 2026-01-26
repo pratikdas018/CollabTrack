@@ -6,7 +6,7 @@ import MyTasks from './pages/MyTasks';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-900 font-sans">
+    <div className="font-sans min-h-screen text-slate-900 dark:text-slate-50">
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/my-tasks" element={<MyTasks />} />

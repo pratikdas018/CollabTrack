@@ -9,18 +9,14 @@ import NotificationDropdown from '../components/NotificationDropdown';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useAuth } from '../context/AuthContext';
 import { playNotificationSound } from '../components/soundUtils';
-import { useDarkMode } from '../components/useDarkMode';
+import { useTheme } from '../components/useTheme.jsx';
 
-<<<<<<< HEAD
 const Confetti = lazy(() => import('react-confetti'));
 
 // Ensure VITE_API_URL is used. If it's missing in production, 
 // it will now fail more visibly or you can set a production fallback.
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.MODE === 'production' ? 'https://your-backend-url.onrender.com' : 'http://localhost:5000');
 
-=======
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
->>>>>>> 943be75 (adding)
 const socket = io(API_URL, {
   withCredentials: true,
 });
@@ -39,7 +35,7 @@ const Dashboard = () => {
   const [nudgeCooldowns, setNudgeCooldowns] = useState({});
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [isMuted, setIsMuted] = useState(() => localStorage.getItem('notification_muted') === 'true');
-  const [darkMode, setDarkMode] = useDarkMode();
+  const [darkMode, setDarkMode] = useTheme();
   const isMutedRef = useRef(isMuted);
   const activityLogRef = useRef(null);
   const [activityDateFilter, setActivityDateFilter] = useState('');
@@ -378,7 +374,7 @@ const Dashboard = () => {
 
   return (
     <ErrorBoundary>
-    <div className={`min-h-screen p-4 md:p-6 relative overflow-hidden ${(isPanicMode || isDeadlineRisk) ? 'bg-red-50/50 dark:bg-slate-950' : 'bg-slate-50 dark:bg-slate-950'} transition-colors duration-200`}>
+    <div className={`min-h-screen p-4 md:p-6 relative overflow-hidden transition-colors duration-200 ${(isPanicMode || isDeadlineRisk) ? 'bg-red-50/50 dark:bg-red-950/30' : 'bg-transparent'}`}>
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 md:hidden transition-opacity" onClick={() => setIsMobileMenuOpen(false)} />
       )}
