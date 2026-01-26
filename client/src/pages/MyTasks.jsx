@@ -32,9 +32,9 @@ const MyTasks = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 transition-colors duration-200">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">My Tasks</h1>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 transition-colors duration-200">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">My Tasks</h1>
         <div className="flex items-center gap-4">
           <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Toggle Dark Mode">
             {darkMode ? '☀️' : '🌙'}
