@@ -30,38 +30,42 @@ const CreateProject = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-8 rounded shadow-md w-96 border dark:border-gray-700">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold dark:text-white">Start New Project</h2>
-          <button type="button" onClick={() => setDarkMode(!darkMode)} className="text-xl" title="Toggle Dark Mode">
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-        </div>
-        <input 
-          className="w-full border p-2 mb-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-          placeholder="Project Name" 
-          onChange={e => setFormData({...formData, name: e.target.value})} 
-        />
-        <input 
-          className="w-full border p-2 mb-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-          placeholder="GitHub Repo URL" 
-          onChange={e => setFormData({...formData, repoUrl: e.target.value})} 
-        />
-        <input 
-          className="w-full border p-2 mb-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-          placeholder="GitHub Repo ID (Required for Webhook)" 
-          onChange={e => setFormData({...formData, githubRepoId: e.target.value})} 
-        />
-        <input 
-          type="date"
-          className="w-full border p-2 mb-4 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
-          onChange={e => setFormData({...formData, deadline: e.target.value})} 
-        />
-        <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-          Create Project
-        </button>
-      </form>
+    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <div className="flex-grow flex items-center justify-center p-4">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-[400px] border border-slate-200 dark:border-slate-800 transition-all animate-fade-in">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Start New Project</h2>
+            <button type="button" onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xl" title="Toggle Dark Mode">
+              {darkMode ? '☀️' : '🌙'}
+            </button>
+          </div>
+          <div className="space-y-4">
+            <input 
+              className="w-full border border-slate-200 dark:border-slate-700 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+              placeholder="Project Name" 
+              onChange={e => setFormData({...formData, name: e.target.value})} 
+            />
+            <input 
+              className="w-full border border-slate-200 dark:border-slate-700 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+              placeholder="GitHub Repo URL" 
+              onChange={e => setFormData({...formData, repoUrl: e.target.value})} 
+            />
+            <input 
+              className="w-full border border-slate-200 dark:border-slate-700 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+              placeholder="GitHub Repo ID (Required for Webhook)" 
+              onChange={e => setFormData({...formData, githubRepoId: e.target.value})} 
+            />
+            <input 
+              type="date"
+              className="w-full border border-slate-200 dark:border-slate-700 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+              onChange={e => setFormData({...formData, deadline: e.target.value})} 
+            />
+            <button className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/25 active:scale-95 mt-2">
+              Create Project
+            </button>
+          </div>
+        </form>
+      </div>
       <Footer />
     </div>
   );

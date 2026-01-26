@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], isLoading = false }) => {
   const { user } = useAuth();
@@ -22,6 +23,17 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
       alert(err.response?.data?.msg || 'Failed to add member');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopyInviteLink = async () => {
+    const inviteLink = `${window.location.origin}/project/${projectId}`;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success('Project link copied to clipboard!', { position: toast.POSITION.BOTTOM_RIGHT });
+    } catch (err) {
+      console.error('Failed to copy link: ', err);
+      toast.error('Failed to copy link.', { position: toast.POSITION.BOTTOM_RIGHT });
     }
   };
 
@@ -126,6 +138,7 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
             <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded"></div>
             <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded"></div>
             <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded"></div>
+            <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded"></div> {/* For the new button */}
             <div className="h-4 w-20 bg-slate-100 dark:bg-slate-800 rounded"></div>
           </div>
           {[1, 2, 3].map(i => (
@@ -147,8 +160,18 @@ const MembersTab = ({ projectId, members, onUpdate, commits = [], tasks = [], is
 
   return (
     <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-white/20 dark:border-slate-800/50 h-full relative z-10 animate-fade-in">
-      <h2 className="text-2xl font-bold mb-6 dark:text-white">Team Performance</h2>
-      
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h2 className="text-2xl font-bold dark:text-white">Team Performance</h2>
+        {isOwner && (
+          <button
+            onClick={handleCopyInviteLink}
+            className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/20 flex-shrink-0"
+          >
+            Copy Project Link
+          </button>
+        )}
+      </div>
+
       {/* Add Member Form */}
       <form onSubmit={handleAddMember} className="mb-10 flex gap-3 max-w-md">
         <input

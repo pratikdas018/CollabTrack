@@ -3,6 +3,7 @@ const Commit = require('../models/Commit');
 const Task = require('../models/Task');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const mongoose = require('mongoose');
 
 // @desc    Create a new project
 // @route   POST /api/projects
@@ -30,7 +31,9 @@ exports.createProject = async (req, res) => {
 exports.getProjects = async (req, res) => {
   try {
     const projects = await Project.find({ 
-      members: { $elemMatch: { user: req.user._id, status: 'Accepted' } } 
+      members: { 
+        $elemMatch: { user: new mongoose.Types.ObjectId(req.user._id), status: 'Accepted' } 
+      } 
     })
       .populate('members.user', 'username name avatarUrl')
       .sort({ createdAt: -1 });
@@ -176,11 +179,11 @@ exports.getProject = async (req, res) => {
 
     // Check if user is an accepted member
     const isMember = project.members.some(m => {
-      const memberId = m.user._id || m.user; // Handle both populated and unpopulated
-      return memberId.toString() === req.user._id.toString() && 
+      const memberId = m.user._id ? m.user._id : m.user;
+      return String(memberId) === String(req.user._id) && 
              m.status === 'Accepted';
-    }
-    );
+    });
+
     if (!isMember) return res.status(401).json({ msg: 'Not authorized. Please accept the invitation first.' });
 
     let commits = await Commit.find({ projectId: req.params.id }).sort({ timestamp: -1 });
