@@ -414,12 +414,12 @@ const Dashboard = () => {
           {/* Mobile Controls */}
           <div className="flex md:hidden items-center gap-2">
             <NotificationDropdown socket={socket} userId={user?._id} muted={isMuted} />
-            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-lg bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-800/50 text-slate-700 dark:text-slate-200">
-              {isMobileMenuOpen ? (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              ) : (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-              )}
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-lg bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-800/50 text-slate-700 dark:text-slate-200 focus:outline-none">
+              <div className="space-y-1.5">
+                <span className={`block w-6 h-0.5 bg-current transform transition duration-300 ease-in-out ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+                <span className={`block w-6 h-0.5 bg-current transform transition duration-300 ease-in-out ${isMobileMenuOpen ? 'opacity-0' : ''}`}></span>
+                <span className={`block w-6 h-0.5 bg-current transform transition duration-300 ease-in-out ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+              </div>
             </button>
           </div>
         </div>
