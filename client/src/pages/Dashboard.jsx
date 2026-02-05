@@ -39,6 +39,7 @@ const Dashboard = () => {
   const activityLogRef = useRef(null);
   const [activityDateFilter, setActivityDateFilter] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const touchStart = useRef({ x: 0, y: 0 });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -402,25 +403,25 @@ const Dashboard = () => {
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       {progress === 100 && <Confetti width={windowSize.width} height={windowSize.height} />}
-      <header className="mb-8 sticky top-0 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl py-4 border-b border-slate-200/50 dark:border-slate-800/50 -mx-4 px-4 md:-mx-6 md:px-6">
-        <div className="flex justify-between items-center gap-4">
+      <header className="mb-8 sticky top-0 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl py-3 md:py-4 border-b border-slate-200/50 dark:border-slate-800/50 -mx-4 px-4 md:-mx-6 md:px-6">
+        <div className="flex justify-between items-center gap-2 md:gap-4">
           {loading ? (
             <div className="animate-pulse">
               <div className="h-10 w-64 bg-slate-200 dark:bg-slate-800 rounded-lg mb-2"></div>
               <div className="h-4 w-96 bg-slate-200 dark:bg-slate-800 rounded-lg"></div>
             </div>
           ) : (
-            <div>
-              <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight truncate max-w-[200px] md:max-w-none">{project.name}</h1>
+            <div className="flex-1 min-w-0 overflow-hidden pr-2">
+              <h1 className="text-xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight truncate block">{project.name}</h1>
               <p className="text-slate-500 dark:text-slate-400 font-medium mt-1 flex items-center gap-2 text-sm md:text-base">
                 <span className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded uppercase tracking-wider">Repository</span>
-                <span className="truncate max-w-[150px] md:max-w-none">{project.repoUrl}</span>
+                <span className="truncate">{project.repoUrl}</span>
               </p>
             </div>
           )}
 
           {/* Desktop Controls */}
-          <div className="hidden md:flex items-center gap-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-1.5 rounded-xl shadow-sm border border-white/20 dark:border-slate-800/50">
+          <div className="hidden md:flex items-center gap-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-1.5 rounded-xl shadow-sm border border-white/20 dark:border-slate-800/50 flex-shrink-0">
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Dark Mode">
               {darkMode ? '☀️' : '🌙'}
             </button>
@@ -438,10 +439,13 @@ const Dashboard = () => {
           </div>
 
           {/* Mobile Controls */}
-          <div className="flex md:hidden items-center gap-2">
-            <div className="mr-2 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-black uppercase tracking-widest">
+      <div className="flex md:hidden items-center gap-1 flex-shrink-0">
+        <div className="hidden sm:block px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-[10px] font-black uppercase tracking-widest">
               {activeTab}
             </div>
+        <button onClick={() => setDarkMode(!darkMode)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg" title="Toggle Dark Mode">
+              {darkMode ? '☀️' : '🌙'}
+            </button>
             <NotificationDropdown socket={socket} userId={user?._id} muted={isMuted} />
             <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-lg bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-800/50 text-slate-700 dark:text-slate-200 focus:outline-none">
               <div className="space-y-1.5">
@@ -454,7 +458,7 @@ const Dashboard = () => {
         </div>
 
         {/* Mobile Sidebar */}
-        <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`fixed inset-y-0 right-0 z-50 w-72 bg-white dark:bg-slate-900 shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="flex flex-col h-full p-6">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center gap-2">
