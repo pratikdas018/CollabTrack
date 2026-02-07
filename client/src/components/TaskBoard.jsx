@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoading = false }) => {
   const { user } = useAuth();
@@ -16,6 +17,88 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
   const [mentionQuery, setMentionQuery] = useState('');
   const [showMentions, setShowMentions] = useState(false);
   const [showEmptyColumns, setShowEmptyColumns] = useState(false);
+  
+  // Swipe Logic Refs
+  const touchStartRef = useRef(null);
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = (e) => {
+    touchStartRef.current = {
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    };
+  };
+
+  const handleTouchEnd = (e, taskId, currentColumn) => {
+    if (!touchStartRef.current) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    const deltaX = touchStartRef.current.x - touchEndX;
+    const deltaY = touchStartRef.current.y - touchEndY;
+    
+    touchStartRef.current = null;
+
+    // Ignore if vertical scroll is dominant
+    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+
+    if (Math.abs(deltaX) > minSwipeDistance) {
+      const direction = deltaX > 0 ? 'left' : 'right';
+      handleSwipe(taskId, currentColumn, direction);
+    }
+  };
+
+  const handleSwipe = (taskId, currentColumn, direction) => {
+    const statusOrder = ['todo', 'doing', 'done'];
+    let nextStatus = null;
+
+    if (currentColumn === 'At Risk') {
+      if (direction === 'right') nextStatus = 'todo';
+    } else {
+      const currentIndex = statusOrder.indexOf(currentColumn);
+      if (currentIndex === -1) return;
+
+      if (direction === 'right') {
+        if (currentIndex < statusOrder.length - 1) nextStatus = statusOrder[currentIndex + 1];
+      } else {
+        if (currentIndex > 0) nextStatus = statusOrder[currentIndex - 1];
+        else if (currentIndex === 0) nextStatus = 'At Risk';
+      }
+    }
+
+    if (nextStatus) {
+      const newColumns = { ...columns };
+      const sourceList = [...newColumns[currentColumn]];
+      const destList = [...newColumns[nextStatus]];
+      
+      const taskIndex = sourceList.findIndex(t => t.id === taskId);
+      if (taskIndex === -1) return;
+      
+      const [movedTask] = sourceList.splice(taskIndex, 1);
+      destList.push(movedTask);
+      
+      setColumns({
+        ...newColumns,
+        [currentColumn]: sourceList,
+        [nextStatus]: destList
+      });
+
+      if (navigator.vibrate) navigator.vibrate(50);
+      const statusLabels = { 'todo': 'To Do', 'doing': 'Doing', 'done': 'Done', 'At Risk': 'At Risk' };
+      toast.success(`Moved to ${statusLabels[nextStatus]}`, {
+        position: "bottom-center",
+        autoClose: 1000,
+        hideProgressBar: true
+      });
+
+      api.put(`/projects/${projectId}/tasks/${taskId}`, { status: nextStatus })
+        .catch(err => {
+          console.error("Swipe update failed", err);
+          toast.error("Failed to update task status");
+        });
+    }
+  };
 
   useEffect(() => {
     // Group tasks by status
@@ -295,6 +378,14 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
+                            onTouchStart={(e) => {
+                              provided.dragHandleProps?.onTouchStart?.(e);
+                              handleTouchStart(e);
+                            }}
+                            onTouchEnd={(e) => {
+                              provided.dragHandleProps?.onTouchEnd?.(e);
+                              handleTouchEnd(e, task.id, columnId);
+                            }}
                             className="bg-white dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/50 hover:border-indigo-300 dark:hover:border-indigo-900 transition-all duration-300 hover:scale-[1.02] hover:shadow-md group"
                           >
                             <div className="font-bold text-slate-800 dark:text-slate-100 leading-snug">

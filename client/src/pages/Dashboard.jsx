@@ -42,6 +42,27 @@ const Dashboard = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const touchStart = useRef({ x: 0, y: 0 });
 
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDeadline, setNewTaskDeadline] = useState('');
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+    
+    try {
+      await api.post(`/projects/${id}/tasks`, {
+        title: newTaskTitle,
+        deadline: newTaskDeadline,
+        status: 'todo'
+      });
+      setNewTaskTitle('');
+      setNewTaskDeadline('');
+      toast.success('Task created!');
+    } catch (err) {
+      toast.error('Failed to create task');
+    }
+  };
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -758,6 +779,31 @@ const Dashboard = () => {
       </div>
       ) : activeTab === 'tasks' ? (
         <div className="animate-fade-in">
+           {/* Mobile Quick Add Task */}
+           <div className="md:hidden mb-4 bg-white dark:bg-slate-900 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+             <form onSubmit={handleCreateTask} className="flex gap-2 items-center">
+               <input 
+                 type="text" 
+                 value={newTaskTitle}
+                 onChange={(e) => setNewTaskTitle(e.target.value)}
+                 placeholder="New Task..." 
+                 className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-slate-800 dark:text-white placeholder-slate-400 outline-none"
+               />
+               <input 
+                 type="date" 
+                 value={newTaskDeadline}
+                 onChange={(e) => setNewTaskDeadline(e.target.value)}
+                 className="bg-transparent border-none focus:ring-0 text-xs text-slate-500 dark:text-slate-400 p-0"
+               />
+               <button 
+                 type="submit"
+                 disabled={!newTaskTitle.trim()}
+                 className="p-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50 shadow-sm active:scale-95 transition-transform"
+               >
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+               </button>
+             </form>
+           </div>
            <TaskBoard 
              tasks={processedTasks} 
              projectId={id}
