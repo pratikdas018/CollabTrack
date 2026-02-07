@@ -4,6 +4,7 @@ import io from 'socket.io-client';
 import { PieChart, Pie, Tooltip, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import api from '../api';
 import TaskBoard from '../components/TaskBoard';
+import { toast } from 'react-toastify';
 import MembersTab from '../components/MembersTab';
 import NotificationDropdown from '../components/NotificationDropdown';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -73,7 +74,7 @@ const Dashboard = () => {
     socket.on('new-commit', (newCommits) => {
       setCommits(prev => [...newCommits, ...prev]);
       if (!isMutedRef.current && document.hidden) playNotificationSound('success');
-      alert('🔥 New Code Pushed!');
+      toast.info('🔥 New Code Pushed!');
     });
 
     socket.on('task-updated', (updatedTask) => {
@@ -94,7 +95,7 @@ const Dashboard = () => {
     socket.on('member-added', (newMember) => {
       setProject(prev => (prev ? { ...prev, members: [...prev.members, newMember] } : prev));
       if (!isMutedRef.current && document.hidden) playNotificationSound('success');
-      alert(`👋 New member joined: ${newMember.user.name}`);
+      toast.success(`👋 New member joined: ${newMember.user.name}`);
     });
 
     // Load nudge cooldowns from local storage
@@ -124,7 +125,7 @@ const Dashboard = () => {
       const res = await api.post(`/projects/${id}/sync`);
       setCommits(res.data);
     } catch (err) {
-      alert('Failed to sync commits');
+      toast.error('Failed to sync commits');
     } finally {
       setIsSyncing(false);
     }
@@ -134,21 +135,21 @@ const Dashboard = () => {
     const now = Date.now();
     try {
       await api.post(`/projects/${id}/nudge`, { memberId: userId });
-      alert('Nudge sent! 👋');
+      toast.success('Nudge sent! 👋');
       const newCooldowns = { ...nudgeCooldowns, [userId]: now };
       setNudgeCooldowns(newCooldowns);
       localStorage.setItem(`nudgeCooldowns_${id}`, JSON.stringify(newCooldowns));
     } catch (err) {
-      alert('Failed to send nudge');
+      toast.error('Failed to send nudge');
     }
   };
 
   const handleUpdateProject = async () => {
     try {
       await api.put(`/projects/${id}`, { name: project.name });
-      alert('Project updated successfully!');
+      toast.success('Project updated successfully!');
     } catch (err) {
-      alert('Failed to update project');
+      toast.error('Failed to update project');
     }
   };
 
@@ -158,7 +159,7 @@ const Dashboard = () => {
         await api.delete(`/projects/${id}`);
         navigate('/create');
       } catch (err) {
-        alert('Failed to delete project');
+        toast.error('Failed to delete project');
       }
     }
   };
@@ -169,13 +170,13 @@ const Dashboard = () => {
         await api.post(`/projects/${id}/leave`);
         navigate('/my-tasks');
       } catch (err) {
-        alert(err.response?.data?.msg || 'Failed to leave project');
+        toast.error(err.response?.data?.msg || 'Failed to leave project');
       }
     }
   };
 
   const handleExportCSV = () => {
-    if (!activityLog.length) return alert("No activity to export");
+    if (!activityLog.length) return toast.warning("No activity to export");
 
     const headers = ["Date", "User", "Type", "Action"];
     const rows = activityLog.map(log => [
@@ -325,7 +326,7 @@ const Dashboard = () => {
   }
 
   // 3️⃣ Task-Level Deadline Warnings & Virtual "At Risk" State
-  const processedTasks = tasks.map(task => {
+  const processedTasks = useMemo(() => tasks.map(task => {
     if (!task.deadline) return task;
     
     const diffTime = new Date(task.deadline) - new Date();
@@ -341,10 +342,10 @@ const Dashboard = () => {
     }
 
     return { ...task, deadlineColor, status };
-  });
+  }), [tasks]);
 
   // 4️⃣ Contribution Fairness Score (Weighted Algorithm)
-  const memberStats = (project?.members || []).map(m => {
+  const memberStats = useMemo(() => (project?.members || []).map(m => {
     const username = m.user.username;
     
     // 1. Commits (Weight: 2)
@@ -376,11 +377,11 @@ const Dashboard = () => {
       activity: activityCount,
       score
     };
-  });
+  }), [project?.members, commits, tasks]);
 
-  const totalScore = memberStats.reduce((acc, curr) => acc + curr.score, 0);
+  const totalScore = useMemo(() => memberStats.reduce((acc, curr) => acc + curr.score, 0), [memberStats]);
 
-  const fairnessScores = memberStats.map(stat => {
+  const fairnessScores = useMemo(() => memberStats.map(stat => {
     const lastNudge = nudgeCooldowns[stat.userId];
     const isCooldown = lastNudge && (Date.now() - lastNudge < 24 * 60 * 60 * 1000);
     return {
@@ -388,7 +389,7 @@ const Dashboard = () => {
       percentage: totalScore === 0 ? 0 : Math.round((stat.score / totalScore) * 100),
       isCooldown
     };
-  }).sort((a, b) => b.percentage - a.percentage);
+  }).sort((a, b) => b.percentage - a.percentage), [memberStats, nudgeCooldowns, totalScore]);
 
   return (
     <ErrorBoundary>
@@ -443,9 +444,6 @@ const Dashboard = () => {
         <div className="hidden sm:block px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-[10px] font-black uppercase tracking-widest">
               {activeTab}
             </div>
-        <button onClick={() => setDarkMode(!darkMode)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg" title="Toggle Dark Mode">
-              {darkMode ? '☀️' : '🌙'}
-            </button>
             <NotificationDropdown socket={socket} userId={user?._id} muted={isMuted} />
             <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-lg bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-800/50 text-slate-700 dark:text-slate-200 focus:outline-none">
               <div className="space-y-1.5">
@@ -474,6 +472,7 @@ const Dashboard = () => {
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-3">Navigation</p>
               {[
                 { id: 'overview', label: 'Overview', icon: '📊' },
+                { id: 'tasks', label: 'Tasks', icon: '✅' },
                 { id: 'members', label: 'Members', icon: '👥' },
                 { id: 'activity', label: 'Activity', icon: '🕰️' },
                 { id: 'settings', label: 'Settings', icon: '⚙️' },
@@ -521,6 +520,12 @@ const Dashboard = () => {
           onClick={() => setActiveTab('overview')}
         >
           Overview
+        </button>
+        <button 
+          className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${activeTab === 'tasks' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          onClick={() => setActiveTab('tasks')}
+        >
+          Tasks
         </button>
         <button 
           className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${activeTab === 'members' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
@@ -728,7 +733,7 @@ const Dashboard = () => {
         </div>
 
         {/* Right Col: Task Board */}
-        <div className={`lg:col-span-2 ${loading ? '' : 'animate-fade-in'}`} style={{ animationDelay: '200ms' }}>
+        <div className={`hidden lg:block lg:col-span-2 ${loading ? '' : 'animate-fade-in'}`} style={{ animationDelay: '200ms' }}>
            <TaskBoard 
              tasks={processedTasks} 
              projectId={id}
@@ -737,7 +742,30 @@ const Dashboard = () => {
              onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
            />
         </div>
+
+        {/* Mobile Task Link */}
+        <div className="lg:hidden col-span-1 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-white/20 dark:border-slate-800/50 text-center animate-fade-in">
+            <div className="text-4xl mb-3">✅</div>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Project Tasks</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">View and manage all project tasks, kanban board, and assignments.</p>
+            <button 
+              onClick={() => setActiveTab('tasks')}
+              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/20"
+            >
+              Open Task Board
+            </button>
+        </div>
       </div>
+      ) : activeTab === 'tasks' ? (
+        <div className="animate-fade-in">
+           <TaskBoard 
+             tasks={processedTasks} 
+             projectId={id}
+             isLoading={loading}
+             members={project?.members || []}
+             onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
+           />
+        </div>
       ) : activeTab === 'members' ? (
         <MembersTab 
           projectId={id} 

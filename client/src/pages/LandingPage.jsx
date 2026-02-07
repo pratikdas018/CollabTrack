@@ -16,15 +16,15 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white transition-colors duration-200 relative">
-      <div className="absolute top-4 right-4">
+      <header className="p-4 flex justify-end">
         <button 
           onClick={() => setDarkMode(!darkMode)} 
-          className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-2xl"
+          className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-2xl z-10"
           title="Toggle Dark Mode"
         >
           {darkMode ? '☀️' : '🌙'}
         </button>
-      </div>
+      </header>
 
       <div className="flex-grow flex flex-col items-center justify-center p-4">
         <div className="max-w-2xl text-center space-y-8">

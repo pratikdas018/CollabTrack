@@ -34,7 +34,7 @@ const CreateProject = () => {
       <div className="flex-grow flex items-center justify-center p-4">
         <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-[400px] border border-slate-200 dark:border-slate-800 transition-all animate-fade-in">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Start New Project</h2>
+            <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight">Start New Project</h2>
             <button type="button" onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xl" title="Toggle Dark Mode">
               {darkMode ? '☀️' : '🌙'}
             </button>

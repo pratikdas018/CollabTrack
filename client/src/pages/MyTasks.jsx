@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import io from 'socket.io-client';
@@ -59,9 +59,9 @@ const MyTasks = () => {
       await api.put(`/projects/${projectId}/accept`);
       toast.success('Invitation accepted successfully!', { position: toast.POSITION.TOP_RIGHT });
       setSelectedInvitation(null);
-      navigate(`/project/${projectId}`); 
+      navigate(`/project/${projectId}`);
     } catch (err) {
-      alert('Failed to accept invitation');
+      toast.error('Failed to accept invitation');
     } finally {
       setProcessingId(null);
     }
@@ -74,14 +74,14 @@ const MyTasks = () => {
         setSelectedInvitation(null);
         setInvitations(prev => prev.filter(inv => inv._id !== projectId));
       } catch (err) {
-        alert('Failed to reject invitation');
+        toast.error('Failed to reject invitation');
       }
     }
   };
 
-  const filteredProjects = projects.filter(project =>
+  const filteredProjects = useMemo(() => projects.filter(project =>
     project.name.toLowerCase().includes(projectSearchQuery.toLowerCase())
-  );
+  ), [projects, projectSearchQuery]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 transition-colors duration-200">
