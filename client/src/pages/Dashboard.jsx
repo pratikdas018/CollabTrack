@@ -258,6 +258,72 @@ const Dashboard = () => {
     }
   }, [activityLog, activeTab]);
 
+  // 3️⃣ Task-Level Deadline Warnings & Virtual "At Risk" State
+  const processedTasks = useMemo(() => tasks.map(task => {
+    if (!task.deadline) return task;
+    
+    const diffTime = new Date(task.deadline) - new Date();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Determine badge color (logic for TaskBoard to potentially use)
+    let deadlineColor = diffDays > 3 ? 'green' : diffDays >= 0 ? 'yellow' : 'red';
+    
+    // Auto move overdue tasks to "At Risk" (Virtual State)
+    let status = task.status;
+    if (diffDays < 0 && task.status !== 'done') {
+      status = 'At Risk';
+    }
+
+    return { ...task, deadlineColor, status };
+  }), [tasks]);
+
+  // 4️⃣ Contribution Fairness Score (Weighted Algorithm)
+  const memberStats = useMemo(() => (project?.members || []).map(m => {
+    const username = m.user.username;
+    
+    // 1. Commits (Weight: 2)
+    const memberCommits = commits.filter(c => c.committerName === username).length;
+    
+    // 2. Tasks Completed (Weight: 5)
+    const memberTasks = tasks.filter(t => 
+      t.status === 'done' && t.assignees.some(a => a.username === username)
+    ).length;
+
+    // 3. Activity (History + Comments) (Weight: 1)
+    let activityCount = 0;
+    tasks.forEach(t => {
+      t.history?.forEach(h => {
+        if (h.user?.username === username) activityCount++;
+      });
+      t.comments?.forEach(c => {
+        if (c.user?.username === username) activityCount++;
+      });
+    });
+
+    const score = (memberCommits * 2) + (memberTasks * 5) + activityCount;
+
+    return {
+      userId: m.user._id,
+      username,
+      commits: memberCommits,
+      tasks: memberTasks,
+      activity: activityCount,
+      score
+    };
+  }), [project?.members, commits, tasks]);
+
+  const totalScore = useMemo(() => memberStats.reduce((acc, curr) => acc + curr.score, 0), [memberStats]);
+
+  const fairnessScores = useMemo(() => memberStats.map(stat => {
+    const lastNudge = nudgeCooldowns[stat.userId];
+    const isCooldown = lastNudge && (Date.now() - lastNudge < 24 * 60 * 60 * 1000);
+    return {
+      ...stat,
+      percentage: totalScore === 0 ? 0 : Math.round((stat.score / totalScore) * 100),
+      isCooldown
+    };
+  }).sort((a, b) => b.percentage - a.percentage), [memberStats, nudgeCooldowns, totalScore]);
+
   if (loading && !project) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       <div className="relative">
@@ -324,72 +390,6 @@ const Dashboard = () => {
       isDeadlineRisk = true;
     }
   }
-
-  // 3️⃣ Task-Level Deadline Warnings & Virtual "At Risk" State
-  const processedTasks = useMemo(() => tasks.map(task => {
-    if (!task.deadline) return task;
-    
-    const diffTime = new Date(task.deadline) - new Date();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Determine badge color (logic for TaskBoard to potentially use)
-    let deadlineColor = diffDays > 3 ? 'green' : diffDays >= 0 ? 'yellow' : 'red';
-    
-    // Auto move overdue tasks to "At Risk" (Virtual State)
-    let status = task.status;
-    if (diffDays < 0 && task.status !== 'done') {
-      status = 'At Risk';
-    }
-
-    return { ...task, deadlineColor, status };
-  }), [tasks]);
-
-  // 4️⃣ Contribution Fairness Score (Weighted Algorithm)
-  const memberStats = useMemo(() => (project?.members || []).map(m => {
-    const username = m.user.username;
-    
-    // 1. Commits (Weight: 2)
-    const memberCommits = commits.filter(c => c.committerName === username).length;
-    
-    // 2. Tasks Completed (Weight: 5)
-    const memberTasks = tasks.filter(t => 
-      t.status === 'done' && t.assignees.some(a => a.username === username)
-    ).length;
-
-    // 3. Activity (History + Comments) (Weight: 1)
-    let activityCount = 0;
-    tasks.forEach(t => {
-      t.history?.forEach(h => {
-        if (h.user?.username === username) activityCount++;
-      });
-      t.comments?.forEach(c => {
-        if (c.user?.username === username) activityCount++;
-      });
-    });
-
-    const score = (memberCommits * 2) + (memberTasks * 5) + activityCount;
-
-    return {
-      userId: m.user._id,
-      username,
-      commits: memberCommits,
-      tasks: memberTasks,
-      activity: activityCount,
-      score
-    };
-  }), [project?.members, commits, tasks]);
-
-  const totalScore = useMemo(() => memberStats.reduce((acc, curr) => acc + curr.score, 0), [memberStats]);
-
-  const fairnessScores = useMemo(() => memberStats.map(stat => {
-    const lastNudge = nudgeCooldowns[stat.userId];
-    const isCooldown = lastNudge && (Date.now() - lastNudge < 24 * 60 * 60 * 1000);
-    return {
-      ...stat,
-      percentage: totalScore === 0 ? 0 : Math.round((stat.score / totalScore) * 100),
-      isCooldown
-    };
-  }).sort((a, b) => b.percentage - a.percentage), [memberStats, nudgeCooldowns, totalScore]);
 
   return (
     <ErrorBoundary>
