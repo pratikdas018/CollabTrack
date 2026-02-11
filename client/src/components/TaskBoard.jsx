@@ -68,6 +68,10 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     }
 
     if (nextStatus) {
+      if (nextStatus === 'done') {
+        if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
+      }
+
       const newColumns = { ...columns };
       const sourceList = [...newColumns[currentColumn]];
       const destList = [...newColumns[nextStatus]];
@@ -93,10 +97,46 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
       });
 
       api.put(`/projects/${projectId}/tasks/${taskId}`, { status: nextStatus })
+        .then(res => onTaskUpdate(res.data))
         .catch(err => {
           console.error("Swipe update failed", err);
           toast.error("Failed to update task status");
         });
+    }
+  };
+
+  const handleStatusChange = async (taskId, currentStatus, newStatus) => {
+    if (currentStatus === newStatus) return;
+
+    if (newStatus === 'done') {
+      if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
+    }
+
+    setColumns(prevColumns => {
+      const newColumns = { ...prevColumns };
+      const sourceList = [...newColumns[currentStatus]];
+      const destList = [...newColumns[newStatus]];
+      
+      const taskIndex = sourceList.findIndex(t => t.id === taskId);
+      if (taskIndex === -1) return prevColumns;
+      
+      const [movedTask] = sourceList.splice(taskIndex, 1);
+      destList.push(movedTask);
+      
+      return {
+        ...newColumns,
+        [currentStatus]: sourceList,
+        [newStatus]: destList
+      };
+    });
+
+    try {
+      const res = await api.put(`/projects/${projectId}/tasks/${taskId}`, { status: newStatus });
+      toast.success(`Moved to ${newStatus}`);
+      onTaskUpdate(res.data);
+    } catch (err) {
+      console.error("Status update failed", err);
+      toast.error("Failed to update task status");
     }
   };
 
@@ -214,6 +254,10 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     const sourceCol = source.droppableId;
     const destCol = destination.droppableId;
 
+    if (destCol === 'done' && sourceCol !== 'done') {
+      if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
+    }
+
     const sourceItems = [...columns[sourceCol]];
     const destItems = [...columns[destCol]];
     const [removed] = sourceItems.splice(source.index, 1);
@@ -233,7 +277,9 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     // Call API to update status
     api.put(`/projects/${projectId}/tasks/${result.draggableId}`, {
       status: destCol
-    }).catch(err => console.error("Failed to update task status", err));
+    })
+    .then(res => onTaskUpdate(res.data))
+    .catch(err => console.error("Failed to update task status", err));
   };
 
   const filteredMembers = members.filter(m => 
@@ -388,14 +434,40 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                             }}
                             className="bg-white dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/50 hover:border-indigo-300 dark:hover:border-indigo-900 transition-all duration-300 hover:scale-[1.02] hover:shadow-md group"
                           >
-                            <div className="font-bold text-slate-800 dark:text-slate-100 leading-snug">
-                              {task.readableId && <span className="text-xs text-gray-400 mr-1">#{task.readableId}</span>}
-                              {task.content}
+                            <div className="flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                checked={columnId === 'done'}
+                                onChange={(e) => {
+                                  const newStatus = e.target.checked ? 'done' : 'todo';
+                                  handleStatusChange(task.id, columnId, newStatus);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-1 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 dark:border-gray-600 dark:bg-slate-700 cursor-pointer"
+                                title={columnId === 'done' ? "Mark as Undone" : "Mark as Done"}
+                              />
+                              <div className={`font-bold text-slate-800 dark:text-slate-100 leading-snug ${columnId === 'done' ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
+                                {task.readableId && <span className="text-xs text-gray-400 mr-1">#{task.readableId}</span>}
+                                {task.content}
+                              </div>
                             </div>
                             
                             {/* Assignees & Actions */}
                             <div className="mt-3">
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Assigned to:</p>
+                              <div className="flex justify-between items-center mb-1">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Assigned to:</p>
+                                <select
+                                  className="text-[10px] uppercase font-bold border rounded bg-slate-100 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 px-1.5 py-0.5 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                  value={columnId}
+                                  onChange={(e) => handleStatusChange(task.id, columnId, e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="Change Status"
+                                >
+                                  {Object.keys(columns).map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                  ))}
+                                </select>
+                              </div>
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   {task.assignees.length > 0 ? (
