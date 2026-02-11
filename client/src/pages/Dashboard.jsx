@@ -108,32 +108,15 @@ const Dashboard = () => {
       setCommits(prev => [...newCommits, ...prev]);
       if (!isMutedRef.current && document.hidden) playNotificationSound('success');
       toast.info('🔥 New Code Pushed!');
+    });
 
-      // 🤖 Automation: Move tasks based on commit messages
-      newCommits.forEach(commit => {
-        const msg = commit.message.toLowerCase();
-        // Regex for "Fixes #123", "Closes #123" -> Done
-        const doneMatch = msg.match(/(?:fix|close|resolve|complete)e?s?\s+#(\d+)\b/);
-        // Regex for "Working on #123", "Progress #123" -> Doing
-        const doingMatch = msg.match(/(?:work|progress)ing?\s+(?:on\s+)?#(\d+)\b/);
-        
-        if (doneMatch) {
-          const readableId = parseInt(doneMatch[1], 10);
-          const task = tasksRef.current.find(t => t.readableId === readableId);
-          if (task && task.status !== 'done') {
-            api.put(`/projects/${id}/tasks/${task._id}`, { status: 'done' })
-               .then(res => setTasks(prev => prev.map(t => t._id === task._id ? res.data : t)))
-               .catch(err => console.error("Auto-move failed", err));
-          }
-        } else if (doingMatch) {
-          const readableId = parseInt(doingMatch[1], 10);
-          const task = tasksRef.current.find(t => t.readableId === readableId);
-          if (task && task.status !== 'doing' && task.status !== 'done') {
-            api.put(`/projects/${id}/tasks/${task._id}`, { status: 'doing' })
-               .then(res => setTasks(prev => prev.map(t => t._id === task._id ? res.data : t)))
-               .catch(err => console.error("Auto-move failed", err));
-          }
+    socket.on('task-updated', (updatedTask) => {
+      setTasks(prev => {
+        const exists = prev.find(t => t._id === updatedTask._id);
+        if (exists) {
+          return prev.map(t => t._id === updatedTask._id ? updatedTask : t);
         }
+        return [...prev, updatedTask];
       });
     });
 
@@ -806,8 +789,7 @@ const Dashboard = () => {
              projectId={id}
              isLoading={loading}
              members={project?.members || []}
-             commits={commits}
-             onTaskUpdate={(t) => setTasks(prev => upsertTaskById(prev, t))} 
+             onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
            />
         </div>
 
@@ -856,8 +838,7 @@ const Dashboard = () => {
              projectId={id}
              isLoading={loading}
              members={project?.members || []}
-             commits={commits}
-             onTaskUpdate={(t) => setTasks(prev => upsertTaskById(prev, t))} 
+             onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
            />
         </div>
       ) : activeTab === 'members' ? (

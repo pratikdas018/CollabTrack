@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import { playUndoSound } from './soundUtils';
 
 const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], commits = [], isLoading = false }) => {
   const { user } = useAuth();
@@ -70,9 +71,8 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], commits 
     }
 
     if (nextStatus) {
-      if (nextStatus === 'At Risk') {
-        toast.info('At Risk is automatically calculated from overdue deadlines.');
-        return;
+      if (nextStatus === 'done') {
+        if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
       }
 
       const newColumns = { ...columns };
@@ -271,9 +271,9 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], commits 
 
     const sourceCol = source.droppableId;
     const destCol = destination.droppableId;
-    if (destCol === 'At Risk') {
-      toast.info('At Risk is automatically calculated from overdue deadlines.');
-      return;
+
+    if (destCol === 'done' && sourceCol !== 'done') {
+      if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
     }
 
     const sourceItems = [...columns[sourceCol]];
@@ -296,8 +296,8 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], commits 
     api.put(`/projects/${projectId}/tasks/${result.draggableId}`, {
       status: destCol
     })
-      .then(res => onTaskUpdate(res.data))
-      .catch(err => console.error("Failed to update task status", err));
+    .then(res => onTaskUpdate(res.data))
+    .catch(err => console.error("Failed to update task status", err));
   };
 
   const filteredMembers = members.filter(m => 
