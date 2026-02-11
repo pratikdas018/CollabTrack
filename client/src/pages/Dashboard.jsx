@@ -106,10 +106,10 @@ const Dashboard = () => {
       newCommits.forEach(commit => {
         const msg = commit.message.toLowerCase();
         // Regex for "Fixes #123", "Closes #123" -> Done
-        const doneMatch = msg.match(/(?:fix|close|resolve|complete)e?s?\s+#(\d+)/);
+        const doneMatch = msg.match(/(?:fix|close|resolve|complete)e?s?\s+#(\d+)\b/);
         // Regex for "Working on #123", "Progress #123" -> Doing
-        const doingMatch = msg.match(/(?:work|progress)ing?\s+(?:on\s+)?#(\d+)/);
-
+        const doingMatch = msg.match(/(?:work|progress)ing?\s+(?:on\s+)?#(\d+)\b/);
+        
         if (doneMatch) {
           const readableId = parseInt(doneMatch[1], 10);
           const task = tasksRef.current.find(t => t.readableId === readableId);
@@ -175,8 +175,9 @@ const Dashboard = () => {
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      const res = await api.post(`/projects/${id}/sync`);
-      setCommits(res.data);
+      await api.post(`/projects/${id}/sync`);
+      await fetchData();
+      toast.success('Project synced successfully');
     } catch (err) {
       toast.error('Failed to sync commits');
     } finally {
@@ -481,6 +482,14 @@ const Dashboard = () => {
             </button>
             <NotificationDropdown socket={socket} userId={user?._id} muted={isMuted} />
             <button 
+              onClick={fetchData}
+              disabled={loading}
+              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400"
+              title="Refresh Data"
+            >
+              <svg className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            </button>
+            <button 
               onClick={handleSync}
               disabled={isSyncing}
               className="bg-indigo-600 text-white px-3 md:px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md hover:shadow-indigo-500/20 text-sm md:text-base"
@@ -546,6 +555,10 @@ const Dashboard = () => {
               <button onClick={() => { setDarkMode(!darkMode); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all">
                 <span className="text-xl">{darkMode ? '☀️' : '🌙'}</span>
                 {darkMode ? 'Light Mode' : 'Dark Mode'}
+              </button>
+              <button onClick={() => { fetchData(); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all">
+                <span className={`text-xl ${loading ? 'animate-spin' : ''}`}>↻</span>
+                Refresh Data
               </button>
               <button onClick={() => { handleSync(); setIsMobileMenuOpen(false); }} disabled={isSyncing} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all disabled:opacity-50">
                 <span className="text-xl">🔄</span>
@@ -792,6 +805,7 @@ const Dashboard = () => {
              projectId={id}
              isLoading={loading}
              members={project?.members || []}
+             commits={commits}
              onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
            />
         </div>
@@ -841,6 +855,7 @@ const Dashboard = () => {
              projectId={id}
              isLoading={loading}
              members={project?.members || []}
+             commits={commits}
              onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
            />
         </div>
