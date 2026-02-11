@@ -22,6 +22,13 @@ const socket = io(API_URL, {
 });
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
+const upsertTaskById = (prevTasks, task) => {
+  if (!task || !task._id) return prevTasks;
+  const map = new Map(prevTasks.map((t) => [t._id, t]));
+  map.set(task._id, { ...(map.get(task._id) || {}), ...task });
+  return Array.from(map.values());
+};
+
 const Dashboard = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -38,6 +45,7 @@ const Dashboard = () => {
   const [darkMode, setDarkMode] = useTheme();
   const isMutedRef = useRef(isMuted);
   const activityLogRef = useRef(null);
+  const tasksRef = useRef(tasks);
   const [activityDateFilter, setActivityDateFilter] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const touchStart = useRef({ x: 0, y: 0 });
@@ -87,29 +95,54 @@ const Dashboard = () => {
   }, [isMuted]);
 
   useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
+
+  useEffect(() => {
     fetchData();
 
     if (!socket.connected) socket.connect();
     socket.emit('join-project', id);
     
-    socket.on('new-commit', (newCommits) => {
+    socket.on('new-commit', async (newCommits) => {
       setCommits(prev => [...newCommits, ...prev]);
       if (!isMutedRef.current && document.hidden) playNotificationSound('success');
       toast.info('🔥 New Code Pushed!');
-    });
 
-    socket.on('task-updated', (updatedTask) => {
-      setTasks(prev => {
-        const exists = prev.find(t => t._id === updatedTask._id);
-        if (exists) {
-          return prev.map(t => t._id === updatedTask._id ? updatedTask : t);
+      // 🤖 Automation: Move tasks based on commit messages
+      newCommits.forEach(commit => {
+        const msg = commit.message.toLowerCase();
+        // Regex for "Fixes #123", "Closes #123" -> Done
+        const doneMatch = msg.match(/(?:fix|close|resolve|complete)e?s?\s+#(\d+)\b/);
+        // Regex for "Working on #123", "Progress #123" -> Doing
+        const doingMatch = msg.match(/(?:work|progress)ing?\s+(?:on\s+)?#(\d+)\b/);
+        
+        if (doneMatch) {
+          const readableId = parseInt(doneMatch[1], 10);
+          const task = tasksRef.current.find(t => t.readableId === readableId);
+          if (task && task.status !== 'done') {
+            api.put(`/projects/${id}/tasks/${task._id}`, { status: 'done' })
+               .then(res => setTasks(prev => prev.map(t => t._id === task._id ? res.data : t)))
+               .catch(err => console.error("Auto-move failed", err));
+          }
+        } else if (doingMatch) {
+          const readableId = parseInt(doingMatch[1], 10);
+          const task = tasksRef.current.find(t => t.readableId === readableId);
+          if (task && task.status !== 'doing' && task.status !== 'done') {
+            api.put(`/projects/${id}/tasks/${task._id}`, { status: 'doing' })
+               .then(res => setTasks(prev => prev.map(t => t._id === task._id ? res.data : t)))
+               .catch(err => console.error("Auto-move failed", err));
+          }
         }
-        return [...prev, updatedTask];
       });
     });
 
+    socket.on('task-updated', (updatedTask) => {
+      setTasks(prev => upsertTaskById(prev, updatedTask));
+    });
+
     socket.on('task-created', (newTask) => {
-      setTasks(prev => [...prev, newTask]);
+      setTasks(prev => upsertTaskById(prev, newTask));
       if (!isMutedRef.current && document.hidden) playNotificationSound('info');
     });
 
@@ -143,8 +176,9 @@ const Dashboard = () => {
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      const res = await api.post(`/projects/${id}/sync`);
-      setCommits(res.data);
+      await api.post(`/projects/${id}/sync`);
+      await fetchData();
+      toast.success('Project synced successfully');
     } catch (err) {
       toast.error('Failed to sync commits');
     } finally {
@@ -449,6 +483,14 @@ const Dashboard = () => {
             </button>
             <NotificationDropdown socket={socket} userId={user?._id} muted={isMuted} />
             <button 
+              onClick={fetchData}
+              disabled={loading}
+              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400"
+              title="Refresh Data"
+            >
+              <svg className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            </button>
+            <button 
               onClick={handleSync}
               disabled={isSyncing}
               className="bg-indigo-600 text-white px-3 md:px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md hover:shadow-indigo-500/20 text-sm md:text-base"
@@ -514,6 +556,10 @@ const Dashboard = () => {
               <button onClick={() => { setDarkMode(!darkMode); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all">
                 <span className="text-xl">{darkMode ? '☀️' : '🌙'}</span>
                 {darkMode ? 'Light Mode' : 'Dark Mode'}
+              </button>
+              <button onClick={() => { fetchData(); setIsMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all">
+                <span className={`text-xl ${loading ? 'animate-spin' : ''}`}>↻</span>
+                Refresh Data
               </button>
               <button onClick={() => { handleSync(); setIsMobileMenuOpen(false); }} disabled={isSyncing} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all disabled:opacity-50">
                 <span className="text-xl">🔄</span>
@@ -760,7 +806,8 @@ const Dashboard = () => {
              projectId={id}
              isLoading={loading}
              members={project?.members || []}
-             onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
+             commits={commits}
+             onTaskUpdate={(t) => setTasks(prev => upsertTaskById(prev, t))} 
            />
         </div>
 
@@ -809,7 +856,8 @@ const Dashboard = () => {
              projectId={id}
              isLoading={loading}
              members={project?.members || []}
-             onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
+             commits={commits}
+             onTaskUpdate={(t) => setTasks(prev => upsertTaskById(prev, t))} 
            />
         </div>
       ) : activeTab === 'members' ? (

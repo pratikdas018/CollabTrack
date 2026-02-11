@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 
-const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoading = false }) => {
+const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], commits = [], isLoading = false }) => {
   const { user } = useAuth();
   const [columns, setColumns] = useState({ 'At Risk': [], todo: [], doing: [], done: [] });
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -17,6 +17,8 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
   const [mentionQuery, setMentionQuery] = useState('');
   const [showMentions, setShowMentions] = useState(false);
   const [showEmptyColumns, setShowEmptyColumns] = useState(false);
+  const [showLinkedOnly, setShowLinkedOnly] = useState(false);
+  const [linkSearch, setLinkSearch] = useState('');
   
   // Swipe Logic Refs
   const touchStartRef = useRef(null);
@@ -68,8 +70,9 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     }
 
     if (nextStatus) {
-      if (nextStatus === 'done') {
-        if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
+      if (nextStatus === 'At Risk') {
+        toast.info('At Risk is automatically calculated from overdue deadlines.');
+        return;
       }
 
       const newColumns = { ...columns };
@@ -105,41 +108,6 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     }
   };
 
-  const handleStatusChange = async (taskId, currentStatus, newStatus) => {
-    if (currentStatus === newStatus) return;
-
-    if (newStatus === 'done') {
-      if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
-    }
-
-    setColumns(prevColumns => {
-      const newColumns = { ...prevColumns };
-      const sourceList = [...newColumns[currentStatus]];
-      const destList = [...newColumns[newStatus]];
-      
-      const taskIndex = sourceList.findIndex(t => t.id === taskId);
-      if (taskIndex === -1) return prevColumns;
-      
-      const [movedTask] = sourceList.splice(taskIndex, 1);
-      destList.push(movedTask);
-      
-      return {
-        ...newColumns,
-        [currentStatus]: sourceList,
-        [newStatus]: destList
-      };
-    });
-
-    try {
-      const res = await api.put(`/projects/${projectId}/tasks/${taskId}`, { status: newStatus });
-      toast.success(`Moved to ${newStatus}`);
-      onTaskUpdate(res.data);
-    } catch (err) {
-      console.error("Status update failed", err);
-      toast.error("Failed to update task status");
-    }
-  };
-
   useEffect(() => {
     // Group tasks by status
     const newColumns = { 'At Risk': [], todo: [], doing: [], done: [] };
@@ -154,6 +122,10 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
 
     if (searchQuery) {
       filteredTasks = filteredTasks.filter(task => task.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+
+    if (showLinkedOnly) {
+      filteredTasks = filteredTasks.filter(task => task.linkedCommits && task.linkedCommits.length > 0);
     }
 
     filteredTasks.forEach(task => {
@@ -172,7 +144,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
       }
     });
     setColumns(newColumns);
-  }, [tasks, memberFilter, user, searchQuery]);
+  }, [tasks, memberFilter, user, searchQuery, showLinkedOnly]);
 
   const handleAddTask = async (e) => {
     e.preventDefault();
@@ -213,6 +185,20 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     }
   };
 
+  const handleLinkCommit = async (taskId, commitUrl) => {
+    try {
+      const res = await api.post(`/projects/${projectId}/tasks/${taskId}/link-commit`, { commitUrl });
+      onTaskUpdate(res.data);
+      toast.success('Commit linked successfully');
+    } catch (err) {
+      if (err.response && err.response.status === 404 && !err.response.data?.msg) {
+        toast.error('Feature not available (Endpoint 404). Please update server.');
+      } else {
+        toast.error(err.response?.data?.msg || 'Failed to link commit');
+      }
+    }
+  };
+
   const handleCommentChange = (e) => {
     const value = e.target.value;
     setCommentText(value);
@@ -247,15 +233,47 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     }
   };
 
+  const handleStatusChange = async (taskId, sourceCol, destCol) => {
+    if (!destCol || sourceCol === destCol) return;
+    if (!columns[sourceCol] || !columns[destCol]) return;
+    if (destCol === 'At Risk') {
+      toast.info('At Risk is automatically calculated from overdue deadlines.');
+      return;
+    }
+
+    const prevColumns = columns;
+    const sourceItems = [...columns[sourceCol]];
+    const destItems = [...columns[destCol]];
+    const taskIndex = sourceItems.findIndex((t) => t.id === taskId);
+    if (taskIndex === -1) return;
+
+    const [movedTask] = sourceItems.splice(taskIndex, 1);
+    destItems.push(movedTask);
+
+    setColumns({
+      ...columns,
+      [sourceCol]: sourceItems,
+      [destCol]: destItems,
+    });
+
+    try {
+      const res = await api.put(`/projects/${projectId}/tasks/${taskId}`, { status: destCol });
+      onTaskUpdate(res.data);
+    } catch (err) {
+      setColumns(prevColumns);
+      toast.error('Failed to update task status');
+    }
+  };
+
   const onDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination) return;
 
     const sourceCol = source.droppableId;
     const destCol = destination.droppableId;
-
-    if (destCol === 'done' && sourceCol !== 'done') {
-      if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
+    if (destCol === 'At Risk') {
+      toast.info('At Risk is automatically calculated from overdue deadlines.');
+      return;
     }
 
     const sourceItems = [...columns[sourceCol]];
@@ -278,13 +296,21 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     api.put(`/projects/${projectId}/tasks/${result.draggableId}`, {
       status: destCol
     })
-    .then(res => onTaskUpdate(res.data))
-    .catch(err => console.error("Failed to update task status", err));
+      .then(res => onTaskUpdate(res.data))
+      .catch(err => console.error("Failed to update task status", err));
   };
 
   const filteredMembers = members.filter(m => 
     m.user.username.toLowerCase().includes(mentionQuery.toLowerCase())
   );
+
+  const getUnlinkedCommits = (task) => {
+    const linkedUrls = new Set(task.linkedCommits?.map(c => c.url) || []);
+    return commits.filter(c => !linkedUrls.has(c.url) && (
+      c.message.toLowerCase().includes(linkSearch.toLowerCase()) || 
+      c.committerName.toLowerCase().includes(linkSearch.toLowerCase())
+    )).slice(0, 10);
+  };
 
   const renderCommentText = (text) => {
     if (!text) return null;
@@ -372,11 +398,21 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
             />
             Show Empty Columns
           </label>
-          {(searchQuery || memberFilter !== 'all') && (
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              checked={showLinkedOnly} 
+              onChange={(e) => setShowLinkedOnly(e.target.checked)}
+              className="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+            Has Commits
+          </label>
+          {(searchQuery || memberFilter !== 'all' || showLinkedOnly) && (
             <button 
               onClick={() => {
                 setSearchQuery('');
                 setMemberFilter('all');
+                setShowLinkedOnly(false);
               }}
               className="text-sm text-red-500 hover:text-red-700 underline"
             >
@@ -508,6 +544,36 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                               </div>
                             </div>
 
+                            {/* Last Commit Message */}
+                            {task.linkedCommits && task.linkedCommits.length > 0 && (
+                              <div className="mt-3 px-2 py-1.5 bg-indigo-50/50 dark:bg-indigo-900/10 rounded border border-indigo-100 dark:border-indigo-900/30">
+                                <div className="flex items-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400">
+                                  <img 
+                                    src={(() => {
+                                      const committer = task.linkedCommits[task.linkedCommits.length - 1].committerName;
+                                      const member = members.find(m => m.user.username === committer);
+                                      return member?.user?.avatarUrl || `https://github.com/${committer}.png`;
+                                    })()}
+                                    alt={task.linkedCommits[task.linkedCommits.length - 1].committerName}
+                                    title={`Committed by ${task.linkedCommits[task.linkedCommits.length - 1].committerName}`}
+                                    className="w-3.5 h-3.5 rounded-full border border-indigo-200 dark:border-indigo-800"
+                                    onError={(e) => e.target.style.display = 'none'}
+                                  />
+                                  <span className="text-xs">🔨</span>
+                                  <a 
+                                    href={task.linkedCommits[task.linkedCommits.length - 1].url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium truncate hover:underline"
+                                    title={task.linkedCommits[task.linkedCommits.length - 1].message}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {task.linkedCommits[task.linkedCommits.length - 1].message || "Latest commit linked"}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Footer: Deadline & History Toggle */}
                             <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 text-xs">
                               {task.deadline && (
@@ -541,6 +607,20 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                                 </button>
                                 <button 
                                   onClick={() => {
+                                    if (expandedTask === task.id && activeTab === 'commits') {
+                                      setExpandedTask(null);
+                                    } else {
+                                      setExpandedTask(task.id);
+                                      setActiveTab('commits');
+                                    }
+                                  }}
+                                  className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                                  title="Link Commits"
+                                >
+                                  🔗
+                                </button>
+                                <button 
+                                  onClick={() => {
                                     if (expandedTask === task.id && activeTab === 'history') {
                                       setExpandedTask(null);
                                     } else {
@@ -559,7 +639,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                             {/* Expanded Section: History or Comments */}
                             {expandedTask === task.id && (
                               <div className="mt-2 bg-gray-50 dark:bg-gray-700 p-2 rounded text-xs space-y-1 max-h-32 overflow-y-auto">
-                                {activeTab === 'comments' ? (
+                                {activeTab === 'comments' && (
                                   <div className="space-y-2">
                                     {task.comments.map((c, i) => (
                                       <div key={i} className="bg-white dark:bg-gray-800 p-1 rounded border dark:border-gray-600">
@@ -593,7 +673,9 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                                       <button type="submit" className="bg-blue-500 text-white px-2 rounded"></button>
                                     </form>
                                   </div>
-                                ) : (
+                                )}
+                                
+                                {activeTab === 'history' && (
                                   // History View
                                   <div className="space-y-2">
                                     {task.history.slice().reverse().map((h, i) => (
@@ -608,6 +690,40 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                                         </div>
                                       </div>
                                     ))}
+                                  </div>
+                                )}
+
+                                {activeTab === 'commits' && (
+                                  <div className="space-y-2">
+                                    <div className="font-bold text-gray-500 dark:text-gray-400 mb-1">Linked Commits</div>
+                                    {task.linkedCommits.map((c, i) => (
+                                      <div key={i} className="bg-white dark:bg-gray-800 p-1.5 rounded border dark:border-gray-600 flex justify-between items-start">
+                                          <div className="overflow-hidden">
+                                              <div className="font-bold text-indigo-600 dark:text-indigo-400 text-[10px]">{c.committerName}</div>
+                                              <div className="dark:text-gray-300 truncate">{c.message}</div>
+                                          </div>
+                                          <a href={c.url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline ml-2">↗</a>
+                                      </div>
+                                    ))}
+                                    
+                                    <div className="mt-3 pt-2 border-t dark:border-gray-600">
+                                        <input 
+                                            placeholder="Search commits to link..." 
+                                            className="w-full p-1.5 rounded border dark:bg-gray-600 dark:border-gray-500 dark:text-white mb-2"
+                                            value={linkSearch}
+                                            onChange={e => setLinkSearch(e.target.value)}
+                                        />
+                                        <div className="space-y-1">
+                                            {getUnlinkedCommits(task).map(c => (
+                                                <div key={c.url} className="flex justify-between items-center bg-white dark:bg-gray-800 p-1 rounded border dark:border-gray-600">
+                                                    <div className="truncate flex-1 mr-2">
+                                                        <span className="font-bold text-[10px]">{c.committerName}:</span> {c.message}
+                                                    </div>
+                                                    <button onClick={() => handleLinkCommit(task.id, c.url)} className="bg-green-500 text-white px-1.5 py-0.5 rounded text-[10px] hover:bg-green-600">Link</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                   </div>
                                 )}
                               </div>

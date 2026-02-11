@@ -422,6 +422,55 @@ exports.addComment = async (req, res) => {
   }
 };
 
+// @desc    Link a commit to a task manually
+// @route   POST /api/projects/:id/tasks/:taskId/link-commit
+exports.linkCommit = async (req, res) => {
+  try {
+    const { commitUrl } = req.body;
+    const task = await Task.findById(req.params.taskId);
+    
+    if (!task) return res.status(404).json({ msg: 'Task not found' });
+
+    // Find the commit in the project's commits
+    const commit = await Commit.findOne({ url: commitUrl, projectId: req.params.id });
+
+    if (!commit) {
+        return res.status(404).json({ msg: 'Commit not found in this project' });
+    }
+
+    // Check if already linked
+    if (task.linkedCommits.some(c => c.url === commit.url)) {
+        return res.status(400).json({ msg: 'Commit already linked to this task' });
+    }
+
+    task.linkedCommits.push({
+        committerName: commit.committerName,
+        message: commit.message,
+        timestamp: commit.timestamp,
+        url: commit.url
+    });
+
+    task.history.push({
+      user: req.user._id,
+      action: `Linked commit: ${commit.message.substring(0, 20)}...`
+    });
+
+    await task.save();
+    
+    await task.populate('assignees');
+    await task.populate('history.user');
+    await task.populate('comments.user');
+
+    const io = req.app.get('io');
+    io.to(req.params.id).emit('task-updated', task);
+
+    res.json(task);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
+  }
+};
+
 // @desc    Manually sync commits from GitHub
 // @route   POST /api/projects/:id/sync
 exports.syncCommits = async (req, res) => {

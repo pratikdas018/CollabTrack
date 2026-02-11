@@ -83,6 +83,7 @@ app.set('io', io);
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/auth', require('./routes/authRoutes')); // Legacy/alternate auth path support
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api/webhooks', require('./routes/webhookRoutes'));
