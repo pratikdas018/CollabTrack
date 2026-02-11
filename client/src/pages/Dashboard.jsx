@@ -38,6 +38,7 @@ const Dashboard = () => {
   const [darkMode, setDarkMode] = useTheme();
   const isMutedRef = useRef(isMuted);
   const activityLogRef = useRef(null);
+  const tasksRef = useRef(tasks);
   const [activityDateFilter, setActivityDateFilter] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const touchStart = useRef({ x: 0, y: 0 });
@@ -87,15 +88,46 @@ const Dashboard = () => {
   }, [isMuted]);
 
   useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
+
+  useEffect(() => {
     fetchData();
 
     if (!socket.connected) socket.connect();
     socket.emit('join-project', id);
     
-    socket.on('new-commit', (newCommits) => {
+    socket.on('new-commit', async (newCommits) => {
       setCommits(prev => [...newCommits, ...prev]);
       if (!isMutedRef.current && document.hidden) playNotificationSound('success');
       toast.info('🔥 New Code Pushed!');
+
+      // 🤖 Automation: Move tasks based on commit messages
+      newCommits.forEach(commit => {
+        const msg = commit.message.toLowerCase();
+        // Regex for "Fixes #123", "Closes #123" -> Done
+        const doneMatch = msg.match(/(?:fix|close|resolve|complete)e?s?\s+#(\d+)/);
+        // Regex for "Working on #123", "Progress #123" -> Doing
+        const doingMatch = msg.match(/(?:work|progress)ing?\s+(?:on\s+)?#(\d+)/);
+
+        if (doneMatch) {
+          const readableId = parseInt(doneMatch[1], 10);
+          const task = tasksRef.current.find(t => t.readableId === readableId);
+          if (task && task.status !== 'done') {
+            api.put(`/projects/${id}/tasks/${task._id}`, { status: 'done' })
+               .then(res => setTasks(prev => prev.map(t => t._id === task._id ? res.data : t)))
+               .catch(err => console.error("Auto-move failed", err));
+          }
+        } else if (doingMatch) {
+          const readableId = parseInt(doingMatch[1], 10);
+          const task = tasksRef.current.find(t => t.readableId === readableId);
+          if (task && task.status !== 'doing' && task.status !== 'done') {
+            api.put(`/projects/${id}/tasks/${task._id}`, { status: 'doing' })
+               .then(res => setTasks(prev => prev.map(t => t._id === task._id ? res.data : t)))
+               .catch(err => console.error("Auto-move failed", err));
+          }
+        }
+      });
     });
 
     socket.on('task-updated', (updatedTask) => {
