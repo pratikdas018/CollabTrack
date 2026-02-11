@@ -187,7 +187,11 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], commits 
       onTaskUpdate(res.data);
       toast.success('Commit linked successfully');
     } catch (err) {
-      toast.error(err.response?.data?.msg || 'Failed to link commit');
+      if (err.response && err.response.status === 404 && !err.response.data?.msg) {
+        toast.error('Feature not available (Endpoint 404). Please update server.');
+      } else {
+        toast.error(err.response?.data?.msg || 'Failed to link commit');
+      }
     }
   };
 
