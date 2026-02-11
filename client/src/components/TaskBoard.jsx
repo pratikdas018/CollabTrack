@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import { playUndoSound } from './soundUtils';
 
 const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoading = false }) => {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
   const [mentionQuery, setMentionQuery] = useState('');
   const [showMentions, setShowMentions] = useState(false);
   const [showEmptyColumns, setShowEmptyColumns] = useState(false);
+  const [showLinkedOnly, setShowLinkedOnly] = useState(false);
   
   // Swipe Logic Refs
   const touchStartRef = useRef(null);
@@ -68,10 +70,6 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     }
 
     if (nextStatus) {
-      if (nextStatus === 'done') {
-        if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
-      }
-
       const newColumns = { ...columns };
       const sourceList = [...newColumns[currentColumn]];
       const destList = [...newColumns[nextStatus]];
@@ -105,41 +103,6 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     }
   };
 
-  const handleStatusChange = async (taskId, currentStatus, newStatus) => {
-    if (currentStatus === newStatus) return;
-
-    if (newStatus === 'done') {
-      if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
-    }
-
-    setColumns(prevColumns => {
-      const newColumns = { ...prevColumns };
-      const sourceList = [...newColumns[currentStatus]];
-      const destList = [...newColumns[newStatus]];
-      
-      const taskIndex = sourceList.findIndex(t => t.id === taskId);
-      if (taskIndex === -1) return prevColumns;
-      
-      const [movedTask] = sourceList.splice(taskIndex, 1);
-      destList.push(movedTask);
-      
-      return {
-        ...newColumns,
-        [currentStatus]: sourceList,
-        [newStatus]: destList
-      };
-    });
-
-    try {
-      const res = await api.put(`/projects/${projectId}/tasks/${taskId}`, { status: newStatus });
-      toast.success(`Moved to ${newStatus}`);
-      onTaskUpdate(res.data);
-    } catch (err) {
-      console.error("Status update failed", err);
-      toast.error("Failed to update task status");
-    }
-  };
-
   useEffect(() => {
     // Group tasks by status
     const newColumns = { 'At Risk': [], todo: [], doing: [], done: [] };
@@ -154,6 +117,10 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
 
     if (searchQuery) {
       filteredTasks = filteredTasks.filter(task => task.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+
+    if (showLinkedOnly) {
+      filteredTasks = filteredTasks.filter(task => task.linkedCommits && task.linkedCommits.length > 0);
     }
 
     filteredTasks.forEach(task => {
@@ -172,7 +139,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
       }
     });
     setColumns(newColumns);
-  }, [tasks, memberFilter, user, searchQuery]);
+  }, [tasks, memberFilter, user, searchQuery, showLinkedOnly]);
 
   const handleAddTask = async (e) => {
     e.preventDefault();
@@ -254,10 +221,6 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     const sourceCol = source.droppableId;
     const destCol = destination.droppableId;
 
-    if (destCol === 'done' && sourceCol !== 'done') {
-      if (!window.confirm("Are you sure you want to mark this task as completed?")) return;
-    }
-
     const sourceItems = [...columns[sourceCol]];
     const destItems = [...columns[destCol]];
     const [removed] = sourceItems.splice(source.index, 1);
@@ -277,9 +240,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     // Call API to update status
     api.put(`/projects/${projectId}/tasks/${result.draggableId}`, {
       status: destCol
-    })
-    .then(res => onTaskUpdate(res.data))
-    .catch(err => console.error("Failed to update task status", err));
+    }).catch(err => console.error("Failed to update task status", err));
   };
 
   const filteredMembers = members.filter(m => 
@@ -372,11 +333,21 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
             />
             Show Empty Columns
           </label>
-          {(searchQuery || memberFilter !== 'all') && (
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              checked={showLinkedOnly} 
+              onChange={(e) => setShowLinkedOnly(e.target.checked)}
+              className="rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+            Has Commits
+          </label>
+          {(searchQuery || memberFilter !== 'all' || showLinkedOnly) && (
             <button 
               onClick={() => {
                 setSearchQuery('');
                 setMemberFilter('all');
+                setShowLinkedOnly(false);
               }}
               className="text-sm text-red-500 hover:text-red-700 underline"
             >
@@ -507,6 +478,36 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                                 </select>
                               </div>
                             </div>
+
+                            {/* Last Commit Message */}
+                            {task.linkedCommits && task.linkedCommits.length > 0 && (
+                              <div className="mt-3 px-2 py-1.5 bg-indigo-50/50 dark:bg-indigo-900/10 rounded border border-indigo-100 dark:border-indigo-900/30">
+                                <div className="flex items-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400">
+                                  <img 
+                                    src={(() => {
+                                      const committer = task.linkedCommits[task.linkedCommits.length - 1].committerName;
+                                      const member = members.find(m => m.user.username === committer);
+                                      return member?.user?.avatarUrl || `https://github.com/${committer}.png`;
+                                    })()}
+                                    alt={task.linkedCommits[task.linkedCommits.length - 1].committerName}
+                                    title={`Committed by ${task.linkedCommits[task.linkedCommits.length - 1].committerName}`}
+                                    className="w-3.5 h-3.5 rounded-full border border-indigo-200 dark:border-indigo-800"
+                                    onError={(e) => e.target.style.display = 'none'}
+                                  />
+                                  <span className="text-xs">🔨</span>
+                                  <a 
+                                    href={task.linkedCommits[task.linkedCommits.length - 1].url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium truncate hover:underline"
+                                    title={task.linkedCommits[task.linkedCommits.length - 1].message}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {task.linkedCommits[task.linkedCommits.length - 1].message || "Latest commit linked"}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
 
                             {/* Footer: Deadline & History Toggle */}
                             <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 text-xs">
