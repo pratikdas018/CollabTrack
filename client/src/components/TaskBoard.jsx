@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { playUndoSound } from './soundUtils';
 
-const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoading = false }) => {
+const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], commits = [], isLoading = false }) => {
   const { user } = useAuth();
   const [columns, setColumns] = useState({ 'At Risk': [], todo: [], doing: [], done: [] });
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -19,6 +19,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
   const [showMentions, setShowMentions] = useState(false);
   const [showEmptyColumns, setShowEmptyColumns] = useState(false);
   const [showLinkedOnly, setShowLinkedOnly] = useState(false);
+  const [linkSearch, setLinkSearch] = useState('');
   
   // Swipe Logic Refs
   const touchStartRef = useRef(null);
@@ -180,6 +181,16 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
     }
   };
 
+  const handleLinkCommit = async (taskId, commitUrl) => {
+    try {
+      const res = await api.post(`/projects/${projectId}/tasks/${taskId}/link-commit`, { commitUrl });
+      onTaskUpdate(res.data);
+      toast.success('Commit linked successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to link commit');
+    }
+  };
+
   const handleCommentChange = (e) => {
     const value = e.target.value;
     setCommentText(value);
@@ -246,6 +257,14 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
   const filteredMembers = members.filter(m => 
     m.user.username.toLowerCase().includes(mentionQuery.toLowerCase())
   );
+
+  const getUnlinkedCommits = (task) => {
+    const linkedUrls = new Set(task.linkedCommits?.map(c => c.url) || []);
+    return commits.filter(c => !linkedUrls.has(c.url) && (
+      c.message.toLowerCase().includes(linkSearch.toLowerCase()) || 
+      c.committerName.toLowerCase().includes(linkSearch.toLowerCase())
+    )).slice(0, 10);
+  };
 
   const renderCommentText = (text) => {
     if (!text) return null;
@@ -542,6 +561,20 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                                 </button>
                                 <button 
                                   onClick={() => {
+                                    if (expandedTask === task.id && activeTab === 'commits') {
+                                      setExpandedTask(null);
+                                    } else {
+                                      setExpandedTask(task.id);
+                                      setActiveTab('commits');
+                                    }
+                                  }}
+                                  className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                                  title="Link Commits"
+                                >
+                                  🔗
+                                </button>
+                                <button 
+                                  onClick={() => {
                                     if (expandedTask === task.id && activeTab === 'history') {
                                       setExpandedTask(null);
                                     } else {
@@ -560,7 +593,7 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                             {/* Expanded Section: History or Comments */}
                             {expandedTask === task.id && (
                               <div className="mt-2 bg-gray-50 dark:bg-gray-700 p-2 rounded text-xs space-y-1 max-h-32 overflow-y-auto">
-                                {activeTab === 'comments' ? (
+                                {activeTab === 'comments' && (
                                   <div className="space-y-2">
                                     {task.comments.map((c, i) => (
                                       <div key={i} className="bg-white dark:bg-gray-800 p-1 rounded border dark:border-gray-600">
@@ -594,7 +627,9 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                                       <button type="submit" className="bg-blue-500 text-white px-2 rounded"></button>
                                     </form>
                                   </div>
-                                ) : (
+                                )}
+                                
+                                {activeTab === 'history' && (
                                   // History View
                                   <div className="space-y-2">
                                     {task.history.slice().reverse().map((h, i) => (
@@ -609,6 +644,40 @@ const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], isLoadin
                                         </div>
                                       </div>
                                     ))}
+                                  </div>
+                                )}
+
+                                {activeTab === 'commits' && (
+                                  <div className="space-y-2">
+                                    <div className="font-bold text-gray-500 dark:text-gray-400 mb-1">Linked Commits</div>
+                                    {task.linkedCommits.map((c, i) => (
+                                      <div key={i} className="bg-white dark:bg-gray-800 p-1.5 rounded border dark:border-gray-600 flex justify-between items-start">
+                                          <div className="overflow-hidden">
+                                              <div className="font-bold text-indigo-600 dark:text-indigo-400 text-[10px]">{c.committerName}</div>
+                                              <div className="dark:text-gray-300 truncate">{c.message}</div>
+                                          </div>
+                                          <a href={c.url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline ml-2">↗</a>
+                                      </div>
+                                    ))}
+                                    
+                                    <div className="mt-3 pt-2 border-t dark:border-gray-600">
+                                        <input 
+                                            placeholder="Search commits to link..." 
+                                            className="w-full p-1.5 rounded border dark:bg-gray-600 dark:border-gray-500 dark:text-white mb-2"
+                                            value={linkSearch}
+                                            onChange={e => setLinkSearch(e.target.value)}
+                                        />
+                                        <div className="space-y-1">
+                                            {getUnlinkedCommits(task).map(c => (
+                                                <div key={c.url} className="flex justify-between items-center bg-white dark:bg-gray-800 p-1 rounded border dark:border-gray-600">
+                                                    <div className="truncate flex-1 mr-2">
+                                                        <span className="font-bold text-[10px]">{c.committerName}:</span> {c.message}
+                                                    </div>
+                                                    <button onClick={() => handleLinkCommit(task.id, c.url)} className="bg-green-500 text-white px-1.5 py-0.5 rounded text-[10px] hover:bg-green-600">Link</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                   </div>
                                 )}
                               </div>
