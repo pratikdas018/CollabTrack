@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createProject, getProjects, getInvitations, acceptInvitation, rejectInvitation, getProject, syncCommits, addTask, updateTaskStatus, addMember, updateMemberRole, deleteProject, assignTask, addComment, getMyTasks, nudgeMember, updateProject, leaveProject, removeMember } = require('../controllers/projectController');
+const { createProject, getProjects, getInvitations, acceptInvitation, rejectInvitation, getProject, syncCommits, addTask, updateTaskStatus, addMember, updateMemberRole, deleteProject, assignTask, addComment, getMyTasks, nudgeMember, updateProject, leaveProject, removeMember, linkCommit } = require('../controllers/projectController');
 const { ensureAuth } = require('../middleware/authMiddleware');
 
 router.post('/', ensureAuth, createProject);
@@ -20,6 +20,8 @@ router.post('/:id/nudge', ensureAuth, nudgeMember);
 router.put('/:id/members/:userId', ensureAuth, updateMemberRole);
 router.put('/:id', ensureAuth, updateProject);
 router.delete('/:id', ensureAuth, deleteProject);
+// Add this route definition
+router.post('/:id/tasks/:taskId/link-commit', ensureAuth, linkCommit);
 router.post('/:id/leave', ensureAuth, leaveProject);
 router.delete('/:id/members/:userId', ensureAuth, removeMember);
 
