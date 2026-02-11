@@ -111,16 +111,6 @@ const Dashboard = () => {
     });
 
     socket.on('task-updated', (updatedTask) => {
-      setTasks(prev => {
-        const exists = prev.find(t => t._id === updatedTask._id);
-        if (exists) {
-          return prev.map(t => t._id === updatedTask._id ? updatedTask : t);
-        }
-        return [...prev, updatedTask];
-      });
-    });
-
-    socket.on('task-updated', (updatedTask) => {
       setTasks(prev => upsertTaskById(prev, updatedTask));
     });
 
@@ -789,7 +779,8 @@ const Dashboard = () => {
              projectId={id}
              isLoading={loading}
              members={project?.members || []}
-             onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
+             commits={commits}
+             onTaskUpdate={(t) => setTasks(prev => upsertTaskById(prev, t))} 
            />
         </div>
 
@@ -838,7 +829,8 @@ const Dashboard = () => {
              projectId={id}
              isLoading={loading}
              members={project?.members || []}
-             onTaskUpdate={(t) => setTasks(prev => [...prev, t])} 
+             commits={commits}
+             onTaskUpdate={(t) => setTasks(prev => upsertTaskById(prev, t))} 
            />
         </div>
       ) : activeTab === 'members' ? (

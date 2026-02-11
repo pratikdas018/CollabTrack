@@ -4,6 +4,7 @@ const Task = require('../models/Task');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const mongoose = require('mongoose');
+const { applyCommitAutomationForProject } = require('../utils/taskAutomation');
 
 // @desc    Create a new project
 // @route   POST /api/projects
@@ -230,6 +231,15 @@ exports.getProject = async (req, res) => {
             
             if (newCommits.length > 0) {
               await Commit.insertMany(newCommits);
+              await applyCommitAutomationForProject({
+                projectId: project._id,
+                commits: newCommits
+              });
+              const refreshedTasks = await Task.find({ project: project._id })
+                .populate('assignees')
+                .populate('history.user')
+                .populate('comments.user');
+              project.tasks = refreshedTasks;
               commits = newCommits; // Update variable to return to frontend
             }
           }
@@ -511,6 +521,11 @@ exports.syncCommits = async (req, res) => {
 
     if (newCommits.length > 0) {
       await Commit.insertMany(newCommits);
+      await applyCommitAutomationForProject({
+        projectId: project._id,
+        commits: newCommits,
+        io: req.app.get('io')
+      });
     }
 
     // Return fresh list

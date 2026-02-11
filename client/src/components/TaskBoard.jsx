@@ -3,7 +3,6 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { playUndoSound } from './soundUtils';
 
 const TaskBoard = ({ tasks = [], projectId, onTaskUpdate, members = [], commits = [], isLoading = false }) => {
   const { user } = useAuth();

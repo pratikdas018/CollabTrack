@@ -1,6 +1,6 @@
 const Project = require('../models/Project');
 const Commit = require('../models/Commit');
-const Task = require('../models/Task');
+const { applyCommitAutomationForProject } = require('../utils/taskAutomation');
 
 // @desc    Handle GitHub Push Events
 // @route   POST /api/webhooks/github-push
@@ -11,7 +11,7 @@ exports.handleGithubPush = async (req, res) => {
   if (event === 'push') {
     try {
       const repoId = payload.repository.id.toString();
-      
+
       // 1. Find the project linked to this repo
       const project = await Project.findOne({ githubRepoId: repoId });
 
@@ -21,7 +21,7 @@ exports.handleGithubPush = async (req, res) => {
       }
 
       // 2. Process commits
-      const newCommits = payload.commits.map(commit => ({
+      const newCommits = payload.commits.map((commit) => ({
         projectId: project._id,
         committerName: commit.author.username,
         message: commit.message,
@@ -35,28 +35,13 @@ exports.handleGithubPush = async (req, res) => {
       // 3. Save to DB
       await Commit.insertMany(newCommits);
 
-      // 3.5 Link Commits to Tasks (Look for #TASK-12 pattern)
+      // 3.5 Link commits and auto-move tasks using commit message hints.
       const io = req.app.get('io');
-      
-      for (const commit of newCommits) {
-        const match = commit.message.match(/#TASK-(\d+)/i);
-        if (match) {
-          const readableId = parseInt(match[1]);
-          const task = await Task.findOne({ project: project._id, readableId });
-          
-          if (task) {
-            task.linkedCommits.push({
-              message: commit.message,
-              url: commit.url,
-              committer: commit.committerName,
-              timestamp: commit.timestamp
-            });
-            task.history.push({ action: `🔗 Commit linked: ${commit.message.substring(0, 30)}...` });
-            await task.save();
-            io.to(project._id.toString()).emit('task-updated', task);
-          }
-        }
-      }
+      await applyCommitAutomationForProject({
+        projectId: project._id,
+        commits: newCommits,
+        io
+      });
 
       // 4. Real-time update via Socket.io
       io.to(project._id.toString()).emit('new-commit', newCommits);
