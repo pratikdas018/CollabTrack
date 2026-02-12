@@ -223,7 +223,8 @@ exports.getProject = async (req, res) => {
             const data = await response.json();
             const newCommits = data.map(c => ({
               projectId: project._id,
-              committerName: c.commit.author.name,
+              committerName: (c.author && c.author.login) || c.commit.author.name,
+              committerUsername: (c.author && c.author.login) || null,
               message: c.commit.message,
               timestamp: c.commit.author.date,
               url: c.html_url
@@ -465,6 +466,22 @@ exports.linkCommit = async (req, res) => {
       action: `Linked commit: ${commit.message.substring(0, 20)}...`
     });
 
+    // Auto-move linked task based on commit message hints.
+    const message = (commit.message || '').toLowerCase();
+    let nextStatus = null;
+    if (/\b(todo|to[-_\s]*do|backlog|pending|reopen(?:ed)?)\b/i.test(message)) nextStatus = 'todo';
+    else if (/\b(fix(?:e[sd])?|close[sd]?|resolve[sd]?|complete[sd]?|done|finish(?:ed|es|ing)?|ship(?:ped|ping)?)\b/i.test(message)) nextStatus = 'done';
+    else if (/\b(wip|work(?:ing)?|progress(?:ing)?|start(?:ed|ing)?|in[-_\s]*progress|doing|implement(?:ed|ing)?)\b/i.test(message)) nextStatus = 'doing';
+    else nextStatus = 'doing';
+
+    if (task.status !== nextStatus && !(task.status === 'done' && nextStatus === 'doing')) {
+      task.status = nextStatus;
+      task.history.push({
+        user: req.user._id,
+        action: `Auto-moved to ${nextStatus} from linked commit`
+      });
+    }
+
     await task.save();
     
     await task.populate('assignees');
@@ -513,7 +530,8 @@ exports.syncCommits = async (req, res) => {
       .filter(c => !existingUrls.has(c.html_url))
       .map(c => ({
         projectId: project._id,
-        committerName: c.commit.author.name,
+        committerName: (c.author && c.author.login) || c.commit.author.name,
+        committerUsername: (c.author && c.author.login) || null,
         message: c.commit.message,
         timestamp: c.commit.author.date,
         url: c.html_url

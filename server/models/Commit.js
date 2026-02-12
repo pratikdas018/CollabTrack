@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const CommitSchema = new mongoose.Schema({
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
   committerName: String,
+  committerUsername: String,
   message: String,
   timestamp: Date,
   url: String,

@@ -23,7 +23,8 @@ exports.handleGithubPush = async (req, res) => {
       // 2. Process commits
       const newCommits = payload.commits.map((commit) => ({
         projectId: project._id,
-        committerName: commit.author.username,
+        committerName: commit.author.username || commit.author.name || 'Unknown',
+        committerUsername: commit.author.username || null,
         message: commit.message,
         timestamp: commit.timestamp,
         url: commit.url,
