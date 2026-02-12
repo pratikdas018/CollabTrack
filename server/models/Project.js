@@ -6,7 +6,8 @@ const ProjectSchema = new mongoose.Schema({
   githubRepoId: { type: String }, // Crucial for identifying webhooks
   members: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    role: { type: String, enum: ['Owner', 'Member', 'Viewer'], default: 'Member' }
+    role: { type: String, enum: ['Owner', 'Member', 'Viewer'], default: 'Member' },
+    status: { type: String, enum: ['Pending', 'Accepted', 'Rejected'], default: 'Accepted' }
   }],
   tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
   deadline: { type: Date },

@@ -1,24 +1,35 @@
 const Task = require('../models/Task');
 
-const TASK_REF_REGEX = /#(?:task-)?(\d+)\b/gi;
-const DONE_KEYWORDS_REGEX = /\b(fix(?:e[sd])?|close[sd]?|resolve[sd]?|complete[sd]?|done)\b/i;
-const DOING_KEYWORDS_REGEX = /\b(wip|work(?:ing)?|progress(?:ing)?|start(?:ed|ing)?|in\s+progress)\b/i;
+const TASK_REF_PATTERNS = [
+  /#(\d+)\b/gi,
+  /\btask[-_\s:#]*([0-9]+)\b/gi
+];
+
+const DONE_KEYWORDS_REGEX = /\b(fix(?:e[sd])?|close[sd]?|resolve[sd]?|complete[sd]?|done|finish(?:ed|es|ing)?|ship(?:ped|ping)?)\b/i;
+const DOING_KEYWORDS_REGEX = /\b(wip|work(?:ing)?|progress(?:ing)?|start(?:ed|ing)?|in[-_\s]*progress|doing|implement(?:ed|ing)?)\b/i;
+const TODO_KEYWORDS_REGEX = /\b(todo|to[-_\s]*do|backlog|queue(?:d)?|pending|reopen(?:ed)?)\b/i;
 
 const extractReadableTaskIds = (message = '') => {
-  const ids = [];
-  let match;
+  const ids = new Set();
 
-  while ((match = TASK_REF_REGEX.exec(message)) !== null) {
-    ids.push(Number(match[1]));
+  for (const pattern of TASK_REF_PATTERNS) {
+    let match;
+    while ((match = pattern.exec(message)) !== null) {
+      const id = Number(match[1]);
+      if (!Number.isNaN(id) && id > 0) {
+        ids.add(id);
+      }
+    }
   }
 
-  return [...new Set(ids)];
+  return [...ids];
 };
 
 const resolveStatusFromMessage = (message = '') => {
   const readableIds = extractReadableTaskIds(message);
   if (readableIds.length === 0) return null;
 
+  if (TODO_KEYWORDS_REGEX.test(message)) return 'todo';
   if (DONE_KEYWORDS_REGEX.test(message)) return 'done';
   if (DOING_KEYWORDS_REGEX.test(message)) return 'doing';
   return null;
